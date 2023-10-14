@@ -26,7 +26,7 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}/
 )
 
-add_executable(attitude_pid_controller src/attitude_pid_controller.cpp)
+add_executable(attitude_pid_controller src/attitude_pid_controller.cpp src/control_utils/pid.cpp)
 ament_target_dependencies(attitude_pid_controller rclcpp crazyflie_msgs geometry_msgs sensor_msgs)
 
 

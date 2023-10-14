@@ -1,0 +1,12 @@
+float32 thurst_kp
+float32 thurst_ki
+float32 thurst_kd
+float32 roll_kp
+float32 roll_ki
+float32 roll_kd
+float32 pitch_kp
+float32 pitch_ki
+float32 pitch_kd
+float32 yaw_kp
+float32 yaw_ki
+float32 yaw_kd

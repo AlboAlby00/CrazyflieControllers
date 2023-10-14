@@ -13,6 +13,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MotorVel.msg"
   "msg/AttitudeCommand.msg"
   "msg/PositionCommand.msg"
+  "msg/PidTuner.msg"
  )
 
 if(BUILD_TESTING)
