@@ -29,18 +29,22 @@ install(DIRECTORY
 add_executable(attitude_pid_controller src/attitude_pid_controller.cpp src/control_utils/pid.cpp)
 ament_target_dependencies(attitude_pid_controller rclcpp crazyflie_msgs geometry_msgs sensor_msgs)
 
+add_executable(position_pid_controller src/position_pid_controller.cpp src/control_utils/pid.cpp)
+ament_target_dependencies(position_pid_controller rclcpp crazyflie_msgs geometry_msgs sensor_msgs)
+
 
 install(
   TARGETS
   attitude_pid_controller
+  position_pid_controller
   DESTINATION lib/${PROJECT_NAME}
 )
 
 #ament_python_install_package(${PROJECT_NAME})
 
-install(PROGRAMS
+install(
+  PROGRAMS
   scripts/test_controller.py
-  scripts/attitude_pid_controller.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
