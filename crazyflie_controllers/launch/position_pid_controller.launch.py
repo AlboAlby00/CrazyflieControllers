@@ -7,16 +7,23 @@ from ament_index_python import get_package_share_directory
 
 def generate_launch_description():
 
-    controller = Node(
+    position_controller = Node(
+        package='crazyflie_controllers',
+        executable='position_pid_controller',
+        output='screen',
+        arguments=['--ros-args', '--log-level', 'info']
+    )
+
+    attitude_controller = Node(
         package='crazyflie_controllers',
         executable='attitude_pid_controller',
         output='screen',
         arguments=['--ros-args', '--log-level', 'info']
     )
 
-    joystick_to_attitude = Node(
+    cmd_vel_to_attitude = Node(
         package='crazyflie_teleop',
-        executable='joystick_to_attitude',
+        executable='cmd_vel_to_attitude',
         output='screen'
     )
 
@@ -26,6 +33,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         simulation,
-        controller,
-        joystick_to_attitude
+        attitude_controller,
+        position_controller,
+        cmd_vel_to_attitude
     ])

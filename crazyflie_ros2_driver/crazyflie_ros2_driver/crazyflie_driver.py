@@ -5,7 +5,6 @@ class CrazyflieDriver:
 
     def init(self, webots_node, properties):
 
-        self.__driver_freq = 50
         
         self.__robot = webots_node.robot
         rclpy.init(args=None)
