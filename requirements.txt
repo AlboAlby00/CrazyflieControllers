@@ -1,1 +1,2 @@
 sudo apt-get install ros-galactic-teleop-twist-joy
+sudo apt-get install ros-galactic-webots-ros2
