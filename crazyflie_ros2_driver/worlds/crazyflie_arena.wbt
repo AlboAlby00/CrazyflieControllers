@@ -20,7 +20,7 @@ CircleArena {
 }
 Crazyflie {
   translation -4.416961417915289e-15 -3.268234596351256e-15 0.46319061419783847
-  rotation 0.008470942120165671 0.009841051341120451 -0.9999156948703717 1.4447209483285885e-14
-  controller "<extern>"
+  rotation 0.0 0.0 0.0 0.0
   name "crazyflie"
+  controller "<extern>"
 }
