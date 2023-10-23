@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-
 #include "rclcpp/rclcpp.hpp"
 #include "crazyflie_msgs/msg/attitude_command.hpp"
 #include "crazyflie_msgs/msg/pid_tuner.hpp"
@@ -25,13 +24,11 @@ private:
     void _newCommandCallback(const crazyflie_msgs::msg::AttitudeCommand::SharedPtr command);
     void _newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data);
     void _newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data);
-    void _pidTuneCallback(const crazyflie_msgs::msg::PidTuner::SharedPtr tune_msg);
     void _sendCmdMotor();
 
     rclcpp::Subscription<crazyflie_msgs::msg::AttitudeCommand>::SharedPtr _sub_new_position;
     rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr _sub_gps;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr _sub_imu;
-    rclcpp::Subscription<crazyflie_msgs::msg::PidTuner>::SharedPtr _sub_pid_tuner;
     rclcpp::Publisher<crazyflie_msgs::msg::MotorVel>::SharedPtr _pub_motor_vel;
     rclcpp::TimerBase::SharedPtr _cmd_motor_timer;
 
@@ -42,14 +39,14 @@ private:
     double _pitch;
     double _yaw;
 
-    double _target_z;
+    double _input_thrust;
     double _target_roll;
     double _target_pitch;
     double _target_yaw;
 
-    PID _pid_z;
-    PID _pid_roll;
-    PID _pid_pitch;
+    Angular_PID _pid_roll;
+    Angular_PID _pid_pitch;
+    Angular_PID _pid_yaw;
 
     rclcpp::Time _old_time;
 };
