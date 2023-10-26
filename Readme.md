@@ -14,3 +14,5 @@
 - Command `rqt`
 - Rqt interface and topic list:
 ![photo1698328232](https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/7bb07329-8aa6-478b-b2d9-063774010c98)
+
+thrust: 5.367 - 5.368 seems to be very close of the threshold thrust value which let's the drone just float
