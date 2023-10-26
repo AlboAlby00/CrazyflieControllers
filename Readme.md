@@ -9,6 +9,9 @@
 
 ### plotjuggler visualization of continuous signals
 - `ros2 run plotjuggler plotjuggler`
+- In Plotjuggler:
+- Start streaming the ROS 2 topics
+- drag the actual value the vertically splitted graphs
 
 ### rqt to receive info and send commands
 - Command `rqt`
