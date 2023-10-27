@@ -1,12 +1,23 @@
+# CrazyflyControllers
 
+## Setup
 
-
-
-## Crazyflie 2.1
+Set up via 
 
 ```s
 colcon build
 ```
+
+
+## Start commands
+
+- launch the pid attitude controller:  `ros2 launch crazyflie_controllers attitude_pid_controller.launch.py`
+- launch the pid position controller:  `ros2 launch crazyflie_controllers position_pid_controller.launch.py` (it launches both attitude and position controller)
+- launch just drone with still-standing proppellers: `ros2 launch crazyflie_ros2_driver crazyflie_ros2_driver.launch.py`
+
+
+## Crazyflie 2.1
+
 
 ### motor numbers and spinning orientation
 
@@ -37,10 +48,6 @@ https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/95a2af0e-7645
 
 
 
-### start commands:
-- launch the pid attitude controller:  `ros2 launch crazyflie_controllers attitude_pid_controller.launch.py`
-- launch the pid position controller:  `ros2 launch crazyflie_controllers position_pid_controller.launch.py` (it launches both attitude and position controller)
-- launch just drone with still-standing proppellers: `ros2 launch crazyflie_ros2_driver crazyflie_ros2_driver.launch.py`
 
 ### plotjuggler visualization of continuous signals
 - `ros2 run plotjuggler plotjuggler`

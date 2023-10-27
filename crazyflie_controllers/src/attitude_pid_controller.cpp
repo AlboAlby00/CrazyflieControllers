@@ -2,7 +2,7 @@
 
 AttitudePID::AttitudePID()
     : Node("attitude_pid_controller"), _input_thrust(1.0), _target_roll(0.0), _target_pitch(0.0), _target_yaw(0.0),
-     _pid_roll(0.5, 0, 0.1), _pid_pitch(0.5, 0, 0.1, true), _pid_yaw(1.0, 0, 0.5)
+     _pid_roll(0.5, 0, 0.1), _pid_pitch(0.5, 0, 0.1), _pid_yaw(1.0, 0, 0.5)
 {
         _sub_new_position = this->create_subscription<crazyflie_msgs::msg::AttitudeCommand>(
             "/crazyflie/pid/attitude_controller",
