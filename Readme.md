@@ -4,6 +4,9 @@
 
 ## Crazyflie 2.1
 
+```s
+colcon build
+```
 
 ### motor numbers and spinning orientation
 
