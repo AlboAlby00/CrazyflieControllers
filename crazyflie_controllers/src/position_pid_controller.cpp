@@ -2,7 +2,7 @@
 
 PositionPID::PositionPID() : 
     Node("attitude_pid_controller"), _input_yaw(0.0), _target_x(0.0), _target_y(0.0), _target_z(0.0),
-        _pid_x(0.05, 0, 0.05), _pid_y(0.05, 0, 0.05), _pid_z(10, 0 , 5)
+        _pid_x(0.05, 0, 0.05), _pid_y(0.05, 0, 0.05), _pid_z(10, 1 , 5, true)
 {
         _sub_new_position = this->create_subscription<crazyflie_msgs::msg::PositionCommand>(
             "/crazyflie/pid/position_controller",
@@ -47,8 +47,8 @@ void PositionPID::_sendCommandAttitude()
 {
     rclcpp::Duration dt = now() - _old_time; 
     
-    double pid_x = _pid_x.getCommand(_x, _target_x, dt);
-    double pid_y = - _pid_y.getCommand(_y, _target_y, dt);
+    double pid_x = - _pid_x.getCommand(_x, _target_x, dt);
+    double pid_y = _pid_y.getCommand(_y, _target_y, dt);
     double pid_z = _pid_z.getCommand(_z, _target_z, dt);
 
     auto msg = std::make_unique<crazyflie_msgs::msg::AttitudeCommand>();

@@ -18,11 +18,12 @@ class PID {
         const bool _debug;
         double _previous_distance_error;
         int _count;
+        double _integral_error;
 };
 
 class Angular_PID : public PID
 {
     public:
-        Angular_PID( double kp = 0,  double ki = 0,  double kd = 0);
+        Angular_PID( double kp = 0,  double ki = 0,  double kd = 0, bool debug=false);
         double getCommand(const double value, const double target, const rclcpp::Duration dt);
 };

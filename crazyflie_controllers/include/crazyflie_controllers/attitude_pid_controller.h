@@ -13,7 +13,9 @@
 
 #include "crazyflie_controllers/control_utils/pid.h"
 
-constexpr double GRAVITY_COMPENSATION = 50.0;
+constexpr double GRAVITY_COMPENSATION = 54.22; //55.3681225 is the threshold thrust value which lets the drone just levitate from ground very slowly
+// 54.22 is the value which lets the drone stay on the ground at the beginning of the simulation bounce + 1.1487125 in thrust lets it levitate slowly,
+// but setting this to the comnbined value 54.22 + 1.1487125 = 55.3687125 let's it get off ground very fast at the beginning
 constexpr int CONTROLLER_FREQ = 30;
 
 class AttitudePID : public rclcpp::Node {
