@@ -4,6 +4,7 @@
 
 ## Crazyflie 2.1
 
+
 ### motor numbers and spinning orientation
 
 #### m1 - clockwise
@@ -24,6 +25,9 @@
 #### yaw generation
 
 https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/95a2af0e-7645-4e86-b425-01dafb7f4590
+
+### coordinate system and motors and orientation
+![crazyflie_coordinate_system](https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/a7b6904f-05e3-4853-8cea-51ab7b48541a)
 
 ### Overview
 ![msg734367861-16883](https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/53508fcd-6208-40b6-823a-055a93c55f19)
