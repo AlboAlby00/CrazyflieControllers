@@ -47,3 +47,18 @@ https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/95a2af0e-7645
 ![photo1698328232](https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/7bb07329-8aa6-478b-b2d9-063774010c98)
 
 thrust: 5.3681225 is the threshold thrust value which let's the drone just levitate from ground very slowly
+
+
+### Bug hunting
+
+#### Bug with the Pitch direction:
+
+```
+Crazyflie {
+  translation -4.416961417915289e-15 -3.268234596351256e-15 0.46319061419783847
+  rotation 0.008470942120165671 0.009841051341120451 -0.9999156948703717 1.4447209483285885e-14
+  controller "<extern>"
+  name "crazyflie"
+}
+```
+![Crazyflie_Bug](https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/45f4fe91-cbef-43f8-8ff5-9cba6c02bbb4)
