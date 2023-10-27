@@ -1,3 +1,20 @@
+## Crazyflie 2.1
+
+### motor numbers and spinning orientation
+
+#### m1 - clockwise
+![m1](https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/6d818960-ba34-4e41-8b84-6226d07ec23c)
+
+
+#### m2 - counterclockwise
+![m2](https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/22949faf-5311-4327-bd66-b3dcd1d5c061)
+
+#### m3 - clockwise
+![m3](https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/5395d51b-9080-424e-8d01-99bd3c10c1c2)
+
+#### m4 - counterclockwise
+![m4](https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/0b32600a-bad9-4c78-91b8-0753a321e449)
+
 ### Overview
 ![msg734367861-16883](https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/53508fcd-6208-40b6-823a-055a93c55f19)
 
