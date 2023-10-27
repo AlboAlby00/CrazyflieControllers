@@ -15,3 +15,7 @@ build
 install
 log
 cmake-build-debug
+
+# potential local setup files
+build_vscode
+.vscode
