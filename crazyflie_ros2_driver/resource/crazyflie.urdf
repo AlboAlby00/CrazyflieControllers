@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <robot name="crazyflie">
     <webots>
-        <plugin type="crazyflie_ros2_driver.crazyflie_driver.CrazyflieDriver" />
+        <plugin type="crazyflie_ros2_driver.crazyflie_webots_driver.CrazyflieWebotsDriver" />
         <plugin type="webots_ros2_driver::Ros2IMU">
             <enabled>true</enabled>
             <topicName>/crazyflie/imu</topicName>

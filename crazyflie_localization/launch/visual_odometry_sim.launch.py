@@ -15,6 +15,17 @@ def generate_launch_description():
         }.items()
     )
 
+    joystick = IncludeLaunchDescription(launch_description_source =
+        PythonLaunchDescriptionSource([get_package_share_directory(
+            'crazyflie_teleop') + '/launch/joystick.launch.py']))
+    
+    attitude_controller = Node(
+        package='crazyflie_controllers',
+        executable='attitude_pid_controller',
+        output='screen',
+        arguments=['--ros-args', '--log-level', 'info']
+    )
+
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
@@ -32,5 +43,7 @@ def generate_launch_description():
     return LaunchDescription([
         simulation,
         rviz_node,
-        visual_odometry_node
+        visual_odometry_node,
+        joystick,
+        attitude_controller
     ])

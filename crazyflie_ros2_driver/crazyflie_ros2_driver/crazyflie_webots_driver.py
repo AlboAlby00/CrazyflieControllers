@@ -1,7 +1,7 @@
 import rclpy
 from crazyflie_msgs.msg import MotorVel
 
-class CrazyflieDriver:
+class CrazyflieWebotsDriver:
 
     def init(self, webots_node, properties):
 
@@ -39,8 +39,6 @@ class CrazyflieDriver:
         self.__m2_motor.setVelocity( self.__target_motor_vel.m2)
         self.__m3_motor.setVelocity(- self.__target_motor_vel.m3)
         self.__m4_motor.setVelocity(self.__target_motor_vel.m4)
-
-
 
         rclpy.spin_once(self.__node, timeout_sec=0)
 
