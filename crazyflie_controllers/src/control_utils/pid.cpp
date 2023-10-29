@@ -4,41 +4,38 @@
 PID::PID( double kp,  double ki,  double kd, bool debug) :
     _kp(kp), _ki(ki),_kd(kd), _debug(debug)
 {
+    this->_previous_distance_error = 0;
+    this->_previous_filtered_error = 0;
 }   
 
-double PID::getCommand(const double value, const double target, const rclcpp::Duration dt) 
+double PID::getCommand(const double value, const double target, const rclcpp::Duration dt, bool use_low_pass_filter, double low_pass_filter_tau) 
 {         
 
          
         double distance_error = target - value;
         double pid_P = _kp * std::clamp(distance_error, -1.0, 1.0);
 
-        
-        
-        // Then in your getCommand function
-        //_integral_error += distance_error * dt.seconds();
-        //double pid_I = _ki * _integral_error;
+
         double pid_I = 0;
+        double dist_difference = 0;
+        if (!use_low_pass_filter) {
+            dist_difference = (distance_error - _previous_distance_error) / dt.seconds();
+            _previous_distance_error = distance_error;
+            
+        } else {
+            
+            dist_difference = (distance_error - _previous_distance_error) / dt.seconds();
+            double filtered_error = _previous_filtered_error + (low_pass_filter_tau / (dt.seconds() + low_pass_filter_tau)) * (dist_difference - _previous_filtered_error);
 
-
-         
-        double dist_difference = (distance_error - _previous_distance_error) / dt.seconds();
-        double pid_D = _kd * std::clamp(dist_difference, -1.0, 1.0);
-        _previous_distance_error = distance_error;
-
-        if (_debug) {
-            std::cout << "inside pid calcu: " << "value: " << value << ", target: " << target << std::endl;
-            std::cout << "resulting pid_P: " << pid_P << std::endl;
-            std::cout << "resulting pid_D: " << pid_D << std::endl;
+            // 3. Update the previous values for the next iteration
+            _previous_distance_error = distance_error;
+            _previous_filtered_error = dist_difference;
+            dist_difference = filtered_error;
         }
-        // if(_debug)
-        // {
-        //     std::cout << "dist_error: " << distance_error << ", previous_dist_error: " << _previous_distance_error << std::endl;
-        //     std::cout << "pid_P: " << pid_P << ", pid_D: " << pid_D << ", pid_I: " << pid_I << std::endl; 
-        //     std::cout << "dist_difference: " << dist_difference << "dt: " << dt.seconds() << std::endl; 
-        //     std::cout << "value: " << value << ", target: " << target << std::endl; 
-        //     std::cout << std::endl;
-        // }
+                 
+        // double dist_difference = (distance_error - _previous_distance_error) / dt.seconds();
+        double pid_D = _kd * std::clamp(dist_difference, -1.0, 1.0);
+
 
         double command = pid_P + pid_I + pid_D; // Why do you add them up together?
         

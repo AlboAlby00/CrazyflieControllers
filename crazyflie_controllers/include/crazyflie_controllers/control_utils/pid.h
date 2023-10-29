@@ -8,7 +8,7 @@
 class PID {
     public:
         PID( double kp = 0,  double ki = 0,  double kd = 0, bool debug = false);
-        double getCommand(const double value, const double target, const rclcpp::Duration dt);
+        double getCommand(const double value, const double target, const rclcpp::Duration dt, bool use_low_pass, double low_pass_filter_tau);
         void update( double kp = 0,  double ki = 0,  double kd = 0 );
 
     protected:
@@ -17,6 +17,7 @@ class PID {
         double _kd;
         const bool _debug;
         double _previous_distance_error;
+        double _previous_filtered_error;
         int _count;
         double _integral_error;
 };
