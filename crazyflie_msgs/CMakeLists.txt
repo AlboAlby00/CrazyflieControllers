@@ -14,6 +14,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/AttitudeCommand.msg"
   "msg/PositionCommand.msg"
   "msg/PidTuner.msg"
+  "msg/TargetTransformationVector.msg"
  )
 
 if(BUILD_TESTING)
