@@ -82,7 +82,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/bathroom/protos/Toilet.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/lights/protos/CeilingSpotLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/trees/protos/Cypress.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/robots/bitcraze/crazyflie/protos/Crazyflie.proto"
+IMPORTABLE EXTERNPROTO "../resource/ModifiedCrazyflie.proto"
 
 WorldInfo {
   info [

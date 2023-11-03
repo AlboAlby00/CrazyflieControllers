@@ -2,18 +2,23 @@
 
 
 VisualOdometryNode::VisualOdometryNode() : Node("visual_odometry_node"),
-    _poseEstimator((cv::Mat_<double>(3, 3) << 301.014, 0, 161.03, 0, 308.08, 139.62, 0, 0, 1)),// intrinsics parameters
-     _current_pose(cv::Matx44d::eye())
+    _K((cv::Mat_<double>(3, 3) << 301.014, 0, 161.03, 0, 308.08, 139.62, 0, 0, 1)),// intrinsics parameters
+     _current_pose(cv::Matx44d::eye()), _vo(new my_vo::VisualOdometry)
 {
     _sub_new_image =  this->create_subscription<sensor_msgs::msg::Image>(
             "/crazyflie/camera",
             10,
             std::bind(&VisualOdometryNode::_newImageCallback, this, std::placeholders::_1));
 
-    _sub_new_imu_pose = this->create_subscription<sensor_msgs::msg::Imu>(
+    _sub_new_imu_pose = this->create_subscription<geometry_msgs::msg::Point>(
             "/crazyflie/imu_pose",
             10,
             std::bind(&VisualOdometryNode::_newImuPoseCallback, this, std::placeholders::_1));
+
+    _sub_new_imu = this->create_subscription<sensor_msgs::msg::Imu>(
+            "/crazyflie/imu",
+            10,
+            std::bind(&VisualOdometryNode::_newImuCallback, this, std::placeholders::_1));
 
     _pub_feature_image = this->create_publisher<sensor_msgs::msg::Image>(
             "/crazyflie/camera_features",
@@ -24,7 +29,13 @@ VisualOdometryNode::VisualOdometryNode() : Node("visual_odometry_node"),
             10);
 }
 
-void VisualOdometryNode::_newImuPoseCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
+void VisualOdometryNode::_newImuPoseCallback(const geometry_msgs::msg::Point::SharedPtr msg)
+{
+    //msg->pose.orientation
+    //msg->pose.position
+}
+
+void VisualOdometryNode::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr msg)
 {
     //msg->pose.orientation
     //msg->pose.position
@@ -35,6 +46,18 @@ void VisualOdometryNode::_newImageCallback(const sensor_msgs::msg::Image::Shared
     RCLCPP_DEBUG(this->get_logger(), "image received");
     cv::Mat new_image = cv_bridge::toCvCopy(msg)->image;
     assert(new_image.data != nullptr);
+    _vo->add_new_image(new_image);
+    cv::Mat new_image_with_keypoints = _vo->get_last_image_with_keypoints();
+
+     // Convert the OpenCV image back to a sensor_msgs::msg::Image
+    cv_bridge::CvImagePtr cv_ptr = std::make_shared<cv_bridge::CvImage>();
+    cv_ptr->image = new_image_with_keypoints;
+    sensor_msgs::msg::Image msg_image_with_keypoints = *cv_ptr->toImageMsg();
+
+    msg_image_with_keypoints.header.stamp = get_clock()->now();
+    msg_image_with_keypoints.header.frame_id = "camera";
+    msg_image_with_keypoints.encoding = msg->encoding;
+    _pub_feature_image->publish(msg_image_with_keypoints);
     /*
     // first image arrives
     if(_old_image.data == nullptr ) 
