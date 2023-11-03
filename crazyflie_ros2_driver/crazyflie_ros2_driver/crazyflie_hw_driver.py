@@ -133,17 +133,17 @@ class ListenerNode(Node):
         cflib.crtp.init_drivers()
         
         # +++ load cf config
-        crazyflies_yaml = os.path.join(
-            os.curdir,
-            'crazyflie_ros2_driver/crazyflies.yaml')
-        with open(crazyflies_yaml, 'r') as ymlfile:
-            crazyflies = yaml.safe_load(ymlfile)
-        robot_data = crazyflies["robots"]
-        uris = [robot_data[crazyflie]["uri"] for crazyflie in robot_data if robot_data[crazyflie]["enabled"]]
+        # crazyflies_yaml = os.path.join(
+        #     os.curdir,
+        #     'crazyflie_ros2_driver/crazyflies.yaml')
+        # with open(crazyflies_yaml, 'r') as ymlfile:
+        #     crazyflies = yaml.safe_load(ymlfile)
+        # robot_data = crazyflies["robots"]
+        # uris = [robot_data[crazyflie]["uri"] for crazyflie in robot_data if robot_data[crazyflie]["enabled"]]
         
         # +++ create synced cf
         factory = CachedCfFactory(rw_cache="./cache")
-        self._synced_cf = factory.construct(uris[0])
+        self._synced_cf = factory.construct("radio://0/80/2M/E7E7E7E7E7")
 
         # +++ add callbacks
         self._synced_cf.cf.fully_connected.add_callback(self._fully_connected)
@@ -206,13 +206,17 @@ class ListenerNode(Node):
         """
         Set attitude
         """
+        thrust_in = attitude_msg.thurst if attitude_msg.thurst <= 10 else 10
+        thrust_in = thrust_in if thrust_in > 2.5 else 0
+        thrust_in = 10001 + thrust_in * (3000) if thrust_in != 0 else 0
+
         if self._is_connected and self._is_ready:
             self.get_logger().debug('I heard: ' + str(attitude_msg.thurst))
             self._synced_cf.cf.commander.send_setpoint(
                             float(attitude_msg.pitch), 
                             float(attitude_msg.roll), 
                             float(attitude_msg.yaw), 
-                            int(attitude_msg.thurst))
+                            int(thrust_in))
             
 
 
