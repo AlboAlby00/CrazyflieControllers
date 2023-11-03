@@ -31,7 +31,7 @@ def generate_launch_description():
     joystick_driver = IncludeLaunchDescription(
         launch_description_source=
             PythonLaunchDescriptionSource([get_package_share_directory(
-                'teleop_twist_joy') + '/launch/teleop-launch.py']),
+                'crazyflie_teleop') + '/launch/joystick.launch.py']),
         condition=IfCondition(LaunchConfiguration('use_joy')))
     
     joystick_to_attitude = Node(
@@ -40,6 +40,8 @@ def generate_launch_description():
         output='screen',
         condition=IfCondition(LaunchConfiguration('use_joy'))
     )
+
+        
 
     return LaunchDescription([
         use_joy_param,

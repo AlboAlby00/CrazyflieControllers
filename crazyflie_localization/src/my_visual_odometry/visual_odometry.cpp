@@ -9,6 +9,11 @@ void my_vo::VisualOdometry::add_new_image(cv::Mat image)
 {
     my_vo::Frame::Ptr frame = my_vo::Frame::createFrame(image);
     _frames.push_back(frame);
+    if(_frames.size() > 200)
+    {
+        _frames.pop_front();
+        std::cout << "max size reached" << "\n";
+    }
 }
 
 cv::Mat my_vo::VisualOdometry::get_last_image_with_keypoints()
