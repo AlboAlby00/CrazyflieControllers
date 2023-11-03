@@ -1,21 +1,34 @@
-import os
-import pathlib
-import launch
+
 from launch_ros.actions import Node
 from launch import LaunchDescription
-from ament_index_python.packages import get_package_share_directory
-from webots_ros2_driver.webots_launcher import WebotsLauncher, Ros2SupervisorLauncher
-from webots_ros2_driver.utils import controller_url_prefix
+from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition, UnlessCondition
+from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
 
+    enable_motor_level_control_param = DeclareLaunchArgument(
+        'motor_level_control',
+        default_value='false',
+        description='If true, then the drone will be controlled on motor level'
+    )
     target_publisher = Node(
         package='crazyflie_ros2_driver',
-        executable='crazyflie_hw_driver',
-        arguments=['--ros-args', '--log-level', 'info']
+        executable='crazyflie_hw_attitude_driver',
+        arguments=['--ros-args', '--log-level', 'info'],
+        condition=UnlessCondition(LaunchConfiguration('motor_level_control'))
+    )
+
+    target_publisher_2 = Node(
+        package='crazyflie_ros2_driver',
+        executable='crazyflie_hw_motor_vel_driver',
+        arguments=['--ros-args', '--log-level', 'info'],
+        condition=IfCondition(LaunchConfiguration('motor_level_control'))
     )
 
 
     return LaunchDescription([
-        target_publisher
+        enable_motor_level_control_param,
+        target_publisher,
+        target_publisher_2
     ])

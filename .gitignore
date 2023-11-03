@@ -21,4 +21,4 @@ build_vscode
 .vscode
 
 # cache 
-cache*
+cache/*
