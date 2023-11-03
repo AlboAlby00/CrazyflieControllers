@@ -6,14 +6,17 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 
 include_directories(include)
 
 
-add_executable(visual_odomerty_node src/visual_odomerty_node.cpp)
+add_executable(visual_odomerty_node src/visual_odomerty_node.cpp src/utils/ORB_tracker.cpp src/utils/pose_estimator.cpp
+                      src/my_geometry/matrix_manipulation.cpp)
 ament_target_dependencies(visual_odomerty_node rclcpp sensor_msgs cv_bridge)
 target_link_libraries(visual_odomerty_node ${OpenCV_LIBS})
 
@@ -24,6 +27,14 @@ install(DIRECTORY
 
 install(TARGETS visual_odomerty_node
   DESTINATION lib/${PROJECT_NAME})
+
+# Install Python modules
+ament_python_install_package(${PROJECT_NAME})
+# Install Python executables
+install(PROGRAMS
+  scripts/pose_from_imu.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
