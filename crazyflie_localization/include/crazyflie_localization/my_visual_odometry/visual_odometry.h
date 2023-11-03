@@ -4,7 +4,8 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <vector>
-
+#include <list>
+#include <stdio.h>
 #include "crazyflie_localization/my_visual_odometry/frame.h" 
 
 namespace my_vo{
@@ -34,7 +35,7 @@ namespace my_vo{
             // Initialization
             void _estimateMotionAnd3DPoints();
             bool _isVoGoodToInit();
-            std::vector<Frame::Ptr> _frames;
+            std::list<Frame::Ptr> _frames;
 
     };
 }
