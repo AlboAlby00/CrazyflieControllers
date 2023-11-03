@@ -1,0 +1,14 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/alboalby00/ros2_galactic_ws/install/crazyflie_teleop/lib/python3.8/site-packages",
+        "/home/alboalby00/ros2_galactic_ws/install/crazyflie_ros2_driver/lib/python3.8/site-packages",
+        "/home/alboalby00/ros2_galactic_ws/install/crazyflie_msgs/lib/python3.8/site-packages",
+        "/opt/ros/galactic/lib/python3.8/site-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/alboalby00/ros2_galactic_ws/install/crazyflie_teleop/lib/python3.8/site-packages",
+        "/home/alboalby00/ros2_galactic_ws/install/crazyflie_ros2_driver/lib/python3.8/site-packages",
+        "/home/alboalby00/ros2_galactic_ws/install/crazyflie_msgs/lib/python3.8/site-packages",
+        "/opt/ros/galactic/lib/python3.8/site-packages"
+    ]
+}
