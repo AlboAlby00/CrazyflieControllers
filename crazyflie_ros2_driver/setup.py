@@ -4,7 +4,8 @@ package_name = 'crazyflie_ros2_driver'
 
 data_files = []
 data_files.append(('share/ament_index/resource_index/packages', ['resource/' + package_name]))
-data_files.append(('share/' + package_name + '/launch', ['launch/crazyflie_webots_driver.launch.py']))
+data_files.append(('share/' + package_name + '/launch', ['launch/crazyflie_ros2_driver.launch.py']))
+data_files.append(('share/' + package_name + '/launch', ['launch/crazyflie_hw_driver.launch.py']))
 data_files.append(('share/' + package_name + '/worlds', ['worlds/crazyflie_arena.wbt']))
 data_files.append(('share/' + package_name + '/worlds', ['worlds/complete_apartment.wbt']))
 data_files.append(('share/' + package_name + '/resource', ['resource/crazyflie.urdf']))
@@ -26,7 +27,8 @@ setup(
     entry_points={
         'console_scripts': [
             'crazyflie_webots_driver = crazyflie_ros2_driver.crazyflie_webots_driver:main',
-            "esp32_driver = crazyflie_ros2_driver.esp32_driver:main"
+            "esp32_driver = crazyflie_ros2_driver.esp32_driver:main",
+            'crazyflie_hw_driver = crazyflie_ros2_driver.crazyflie_hw_driver:main'
         ],
     },
 )
