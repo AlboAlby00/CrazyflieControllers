@@ -5,6 +5,7 @@ package_name = 'crazyflie_ros2_driver'
 data_files = []
 data_files.append(('share/ament_index/resource_index/packages', ['resource/' + package_name]))
 data_files.append(('share/' + package_name + '/launch', ['launch/crazyflie_ros2_driver.launch.py']))
+data_files.append(('share/' + package_name + '/launch', ['launch/crazyflie_hw_driver.launch.py']))
 data_files.append(('share/' + package_name + '/worlds', ['worlds/crazyflie_arena.wbt']))
 data_files.append(('share/' + package_name + '/resource', ['resource/crazyflie.urdf']))
 data_files.append(('share/' + package_name, ['package.xml']))
@@ -23,7 +24,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'crazyflie_driver = crazyflie_ros2_driver.crazyflie_driver:main'
+            'crazyflie_driver = crazyflie_ros2_driver.crazyflie_driver:main',
+            'crazyflie_hw_driver = crazyflie_ros2_driver.crazyflie_hw_driver:main'
         ],
     },
 )
