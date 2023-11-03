@@ -8,12 +8,14 @@ from geometry_msgs.msg import Twist
 from rclpy.duration import Duration
 from rclpy.qos import QoSProfile
 
+GRAVITATIONAL_ACCELERATION = 9.81
+
 class PoseFromImu(Node):
     def __init__(self):
         super().__init__('pose_from_imu')
         self._acceleration = Point()
-        self._velocity = Twist()
         self._position = Point()
+        self._velocity = Point()
         self._old_time = self.get_clock().now()
 
         self._sub_imu = self.create_subscription(
@@ -32,30 +34,36 @@ class PoseFromImu(Node):
         self.get_logger().info("pose_from_imu node is running")
 
     def imu_callback(self, msg):
-        # Assuming IMU data contains linear acceleration in m/s^2
+        # IMU data contains linear acceleration in m/s^2
         self._acceleration.x = msg.linear_acceleration.x
         self._acceleration.y = msg.linear_acceleration.y
-        self._acceleration.z = msg.linear_acceleration.z
+        self._acceleration.z = msg.linear_acceleration.z - GRAVITATIONAL_ACCELERATION
         self.get_logger().debug("imu data received")
 
-
-    def publish_position(self):
         dt : Duration = self._old_time - self.get_clock().now() 
-        self.get_logger().info(str(dt.nanoseconds * 1e-9))
-        # Integrate acceleration to obtain velocity
-        self._velocity.linear.x += self._acceleration.x * dt.nanoseconds * 1e-9
-        self._velocity.linear.y += self._acceleration.y * dt.nanoseconds * 1e-9
-        self._velocity.linear.z += self._acceleration.z * dt.nanoseconds * 1e-9
+        dt = dt.nanoseconds * 1e-9
 
         # Integrate velocity to obtain position
-        self._position.x += self._velocity.linear.x * dt.nanoseconds * 1e-9
-        self._position.y += self._velocity.linear.y * dt.nanoseconds * 1e-9
-        self._position.z += self._velocity.linear.z * dt.nanoseconds * 1e-9
+        self._position.x += self._velocity.x * dt
+        self._position.y += self._velocity.y * dt
+        self._position.z += self._velocity.z * dt
+
+        # Integrate acceleration to obtain velocity
+        self._velocity.x += self._acceleration.x * dt
+        self._velocity.y += self._acceleration.y * dt
+        self._velocity.z += self._acceleration.z * dt
+
 
         self._old_time = self.get_clock().now() 
 
         # Publish the position
         self._pub_imu_pose.publish(self._position)
+
+
+    def publish_position(self):
+        pass
+
+        
 
 def main(args=None):
     rclpy.init(args=args)

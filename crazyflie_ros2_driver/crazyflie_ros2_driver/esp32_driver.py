@@ -17,7 +17,7 @@ class Esp32Driver(Node):
         self.timer = self.create_timer(0.002, self.publish_video_stream) # 500 Hz
         self.frame = None
         self.n_images_saved = 0
-        URL = "http://192.168.0.103"
+        URL = "http://192.168.121.107"
         self.vid = cv2.VideoCapture(URL + ":81/stream")
 
 

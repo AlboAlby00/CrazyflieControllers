@@ -10,7 +10,7 @@ def generate_launch_description():
 
     simulation = IncludeLaunchDescription(
         launch_description_source=PythonLaunchDescriptionSource([
-            get_package_share_directory('crazyflie_ros2_driver') + '/launch/crazyflie_ros2_driver.launch.py'
+            get_package_share_directory('crazyflie_ros2_driver') + '/launch/crazyflie_webots_driver.launch.py'
         ]),
         launch_arguments={
             'simulation_world': 'complete_apartment.wbt',
