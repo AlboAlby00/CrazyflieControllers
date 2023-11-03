@@ -9,7 +9,8 @@ import cflib
 from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.crazyflie import Crazyflie
 from typing import List
-    
+import math
+
 class MotorControlCommandNames:
     motor_control_group: str
     enable: str
@@ -200,23 +201,37 @@ class ListenerNode(Node):
         """
         self._is_ready = True
         self.get_logger().debug("motor level control callback: " + name + str(value))
-   
+    
+    def _convert_thrust(self, in_: float):
+        """
+        - converts scalar from 2.5 to 10 to range of 10001 to 60000
+        - returns 0 if in_ is 0
+        - returns int
+        """
+        thrust_in = in_ if in_ <= 10 else 10
+        thrust_in = thrust_in - 2.5 if thrust_in > 2.5 else 0
+        thrust_in = 10001 + thrust_in * ((40500 - 10001) / (7.5)) if thrust_in != 0 else 0
+        return int(thrust_in)
+
+    def _radian_to_degree(self, in_: float):
+        return float((in_ / (math.pi)) * 360)
 
     def set_attitude_callback(self, attitude_msg: AttitudeCommand):
         """
         Set attitude
         """
-        thrust_in = attitude_msg.thurst if attitude_msg.thurst <= 10 else 10
-        thrust_in = thrust_in if thrust_in > 2.5 else 0
-        thrust_in = 10001 + thrust_in * (3000) if thrust_in != 0 else 0
+        thrust_in = self._convert_thrust(attitude_msg.thurst)
 
         if self._is_connected and self._is_ready:
-            self.get_logger().debug('I heard: ' + str(attitude_msg.thurst))
+            self.get_logger().debug('Received thrust: ' + str(attitude_msg.thurst))
+            self.get_logger().debug("Received pitch: " + str(attitude_msg.pitch))
+            self.get_logger().debug("Received roll: " + str(attitude_msg.roll))
+            self.get_logger().debug("Received yaw: " + str(attitude_msg.yaw))
             self._synced_cf.cf.commander.send_setpoint(
-                            float(attitude_msg.pitch), 
-                            float(attitude_msg.roll), 
-                            float(attitude_msg.yaw), 
-                            int(thrust_in))
+                            self._radian_to_degree(attitude_msg.pitch), 
+                            self._radian_to_degree(attitude_msg.roll), 
+                            self._radian_to_degree(attitude_msg.yaw), 
+                            thrust_in)
             
 
 

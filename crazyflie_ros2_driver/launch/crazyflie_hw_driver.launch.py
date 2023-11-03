@@ -12,8 +12,7 @@ def generate_launch_description():
     target_publisher = Node(
         package='crazyflie_ros2_driver',
         executable='crazyflie_hw_driver',
-        arguments=['--ros-args', '--log-level', 'debug']
-
+        arguments=['--ros-args', '--log-level', 'info']
     )
 
 
