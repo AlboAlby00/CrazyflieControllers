@@ -8,3 +8,4 @@ orthographicViewHeight: 1
 textFiles: 0 "../../../../.ros/webotsR2022b/webots/projects/robots/bitcraze/crazyflie/controllers/crazyflie/crazyflie.c"
 consoles: Console:All:All
 renderingDevicePerspectives: Crazyflie:camera;1;1;0;0
+renderingDevicePerspectives: crazyflie:camera;1;1;0;0
