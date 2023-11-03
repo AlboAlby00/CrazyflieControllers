@@ -3,7 +3,7 @@
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/floors/protos/CircleArena.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/robots/bitcraze/crazyflie/protos/Crazyflie.proto"
+IMPORTABLE EXTERNPROTO "../resource/ModifiedCrazyflie.proto"
 
 WorldInfo {
 }
@@ -18,7 +18,7 @@ TexturedBackgroundLight {
 }
 CircleArena {
 }
-Crazyflie {
+ModifiedCrazyflie {
   translation -4.416961417915289e-15 -3.268234596351256e-15 0.46319061419783847
   rotation 0.0 0.0 0.0 0.0
   name "crazyflie"

@@ -6,11 +6,13 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
 
+
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        output='screen'
+        output='screen',
+        #arguments=['-d', package_dir+"/config/camera.rviz"]
     )
 
     visual_odometry_node = Node(

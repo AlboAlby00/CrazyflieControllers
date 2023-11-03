@@ -6,6 +6,8 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
 
+    package_dir = get_package_share_directory('crazyflie_localization')
+
     simulation = IncludeLaunchDescription(
         launch_description_source=PythonLaunchDescriptionSource([
             get_package_share_directory('crazyflie_ros2_driver') + '/launch/crazyflie_ros2_driver.launch.py'
@@ -30,7 +32,8 @@ def generate_launch_description():
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        output='screen'
+        output='screen',
+        #arguments=['-d', package_dir+"/config/camera.rviz"]
     )
 
     visual_odometry_node = Node(
