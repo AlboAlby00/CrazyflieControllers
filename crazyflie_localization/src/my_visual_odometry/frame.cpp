@@ -5,15 +5,15 @@ const cv::Ptr<cv::FeatureDetector> my_vo::Frame::_detector(cv::ORB::create());
 my_vo::Frame::Ptr my_vo::Frame::createFrame(cv::Mat rgb_img, double time_stamp) 
 {
     Frame::Ptr frame(new Frame());
-    frame->_image = rgb_img;
-    _detector->detectAndCompute(rgb_img, cv::noArray(), frame->_keypoints, frame->_descriptors);
+    frame->image = rgb_img;
+    _detector->detectAndCompute(rgb_img, cv::noArray(), frame->keypoints, frame->descriptors);
     return frame;
 }
 
 cv::Mat my_vo::Frame::get_image_with_keypoints()
 {   
     cv::Mat image_with_keypoints;
-    cv::drawKeypoints(_image, _keypoints, image_with_keypoints, cv::Scalar(0, 0, 255), 
+    cv::drawKeypoints(image, keypoints, image_with_keypoints, cv::Scalar(0, 0, 255), 
             cv::DrawMatchesFlags::DEFAULT);
     return image_with_keypoints;
 }

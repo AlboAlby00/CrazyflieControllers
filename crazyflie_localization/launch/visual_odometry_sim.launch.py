@@ -3,6 +3,7 @@ from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
+import os
 
 def generate_launch_description():
 
@@ -38,7 +39,7 @@ def generate_launch_description():
 
     visual_odometry_node = Node(
         package='crazyflie_localization',
-        executable='visual_odomerty_node',
+        executable='visual_odometry_node',
         output='screen',
         arguments=['--ros-args', '--log-level', 'info']
     )
