@@ -14,17 +14,16 @@ find_package(cv_bridge REQUIRED)
 
 include_directories(include)
 
-file(GLOB VO_SOURCES src/*.cpp src/my_visual_odometry/*.cpp src/my_geometry/*.cpp)
-add_executable(visual_odomerty_node ${VO_SOURCES})
-ament_target_dependencies(visual_odomerty_node rclcpp sensor_msgs cv_bridge)
-target_link_libraries(visual_odomerty_node ${OpenCV_LIBS})
+file(GLOB VO_SOURCES src/visual_odometry_node.cpp src/my_visual_odometry/*.cpp src/my_geometry/*.cpp)
+add_executable(visual_odometry_node ${VO_SOURCES})
+ament_target_dependencies(visual_odometry_node rclcpp sensor_msgs cv_bridge)
+target_link_libraries(visual_odometry_node ${OpenCV_LIBS})
 
-install(DIRECTORY
-  launch
-  DESTINATION share/${PROJECT_NAME}/
-)
+install(DIRECTORY launch config
+  DESTINATION share/${PROJECT_NAME}/)
 
-install(TARGETS visual_odomerty_node
+
+install(TARGETS visual_odometry_node
   DESTINATION lib/${PROJECT_NAME})
 
 # Install Python modules

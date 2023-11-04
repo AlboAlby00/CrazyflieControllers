@@ -2,9 +2,15 @@
 
 
 VisualOdometryNode::VisualOdometryNode() : Node("visual_odometry_node"),
-    _K((cv::Mat_<double>(3, 3) << 301.014, 0, 161.03, 0, 308.08, 139.62, 0, 0, 1)),// intrinsics parameters
      _current_pose(cv::Matx44d::eye()), _vo(new my_vo::VisualOdometry)
 {
+    this->declare_parameter("fx",0.0); double fx = this->get_parameter("fx").as_double();
+    this->declare_parameter("fy",0.0); double fy = this->get_parameter("fy").as_double();
+    this->declare_parameter("cx",0.0); double cx = this->get_parameter("cx").as_double();
+    this->declare_parameter("cy",0.0); double cy = this->get_parameter("cy").as_double();
+
+    _vo->set_intrinsics(fx, fy, cx, cy);
+
     _sub_new_image =  this->create_subscription<sensor_msgs::msg::Image>(
             "/crazyflie/camera",
             10,

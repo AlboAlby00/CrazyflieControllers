@@ -20,9 +20,9 @@ namespace my_vo{
 
                 // -- image features
 
-            std::vector<cv::KeyPoint> _keypoints;
-            cv::Mat _descriptors;
-            cv::Mat _image;
+            std::vector<cv::KeyPoint> keypoints;
+            cv::Mat descriptors;
+            cv::Mat image;
             cv::Mat get_image_with_keypoints();
             
             

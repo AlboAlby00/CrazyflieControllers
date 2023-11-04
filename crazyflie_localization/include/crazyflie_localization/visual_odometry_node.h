@@ -1,13 +1,12 @@
 #pragma once
 
-#include "crazyflie_localization/my_visual_odometry/ORB_tracker.h"
-#include "crazyflie_localization/my_visual_odometry/pose_estimator.h"
 #include "crazyflie_localization/my_geometry/matrix_manipulation.h"
 #include "crazyflie_localization/my_visual_odometry/visual_odometry.h"
 
 
+
 #include <cv_bridge/cv_bridge.h>
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 #include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "geometry_msgs/msg/point.hpp"
@@ -29,10 +28,9 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr _pub_camera_pose;
 
     cv::Mat _old_image;
-    my_vo::ORB_tracker _tracker;
     cv::Matx44d _current_pose;
 
-    const cv::Mat& _K;
+
     const my_vo::VisualOdometry::Ptr _vo;
     
 
