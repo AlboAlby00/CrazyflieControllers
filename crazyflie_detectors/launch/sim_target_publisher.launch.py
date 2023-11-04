@@ -13,7 +13,7 @@ def generate_launch_description():
 
     target_publisher = Node(
         package='crazyflie_detectors',
-        executable='target_publisher.py',
+        executable='sim_target_publisher.py',
         output='screen'
     )
 
