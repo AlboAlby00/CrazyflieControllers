@@ -36,7 +36,7 @@ install(
 
 install(
   PROGRAMS
-  scripts/target_publisher.py
+  scripts/sim_target_publisher.py
   scripts/realife_target_publisher.py
   DESTINATION lib/${PROJECT_NAME}
 )
