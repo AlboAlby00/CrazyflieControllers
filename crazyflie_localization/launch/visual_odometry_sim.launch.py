@@ -34,14 +34,21 @@ def generate_launch_description():
         executable='rviz2',
         name='rviz2',
         output='screen',
-        #arguments=['-d', package_dir+"/config/camera.rviz"]
+        arguments=['-d', package_dir+"/rviz/visual_odometry.rviz"]
     )
+
+    intrinsics = os.path.join(
+        get_package_share_directory('crazyflie_localization'),
+        'config',
+        'webots_camera_intrinsics.yaml'
+        )
 
     visual_odometry_node = Node(
         package='crazyflie_localization',
         executable='visual_odometry_node',
         output='screen',
-        arguments=['--ros-args', '--log-level', 'info']
+        arguments=['--ros-args', '--log-level', 'info'],
+        parameters=[intrinsics]
     )
 
     return LaunchDescription([

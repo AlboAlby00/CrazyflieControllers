@@ -7,13 +7,16 @@
 #include <list>
 #include <stdio.h>
 
+#include "crazyflie_localization/my_geometry/camera.h"
 #include "crazyflie_localization/my_visual_odometry/frame.h" 
 #include "crazyflie_localization/my_visual_odometry/matching_and_tracking.h"
 
 namespace my_vo{
 
     class VisualOdometry
-    {
+    {   
+        public:
+            std::list<cv::Point3d> map;
 
         public:
             typedef std::shared_ptr<VisualOdometry> Ptr;
@@ -25,7 +28,7 @@ namespace my_vo{
             cv::Mat get_last_image_with_keypoints();
 
         private:
-            enum VOState
+            enum class VOState
             {
                 BLANK,
                 DOING_INITIALIZATION,
