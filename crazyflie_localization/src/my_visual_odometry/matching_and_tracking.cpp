@@ -1,9 +1,10 @@
 #include "crazyflie_localization/my_visual_odometry/matching_and_tracking.h"
 
 void my_vo::estimate_pose(
-    std::vector<cv::KeyPoint> keypoints_1, std::vector<cv::KeyPoint> keypoints_2, cv::Mat K,
+    const std::vector<cv::KeyPoint> keypoints_1, const std::vector<cv::KeyPoint> keypoints_2, const cv::Mat& K,
                     std::vector<cv::DMatch> matches, cv::Mat &R, cv::Mat &t)
 {
+    std::cout << "f0" << std::endl;
     //−− Convert the matching point to the form of vector<Point2f>
     std::vector<cv::Point2f> points1;
     std::vector<cv::Point2f> points2;
@@ -12,6 +13,7 @@ void my_vo::estimate_pose(
         points1.push_back(keypoints_1[matches[i].queryIdx].pt);
         points2.push_back(keypoints_2[matches[i].trainIdx].pt);
     }
+    std::cout << "f1" << std::endl;
 
     //−− Calculate essential matrix
     cv::Point2d principal_point( K.at<double>(0,2), K.at<double>(1,2)); // camera principal point
@@ -19,9 +21,12 @@ void my_vo::estimate_pose(
     cv::Mat essential_matrix;
     essential_matrix = cv::findEssentialMat(points1, points2, focal_length,principal_point);
 
+    std::cout << essential_matrix << std::endl;
     //−− Recover rotation and translation from the essential matrix.
     cv::recoverPose(essential_matrix, points1, points2, R, t, focal_length,
         principal_point);
+
+    std::cout << "f3" << std::endl;
 }
 
 void my_vo::track_features(

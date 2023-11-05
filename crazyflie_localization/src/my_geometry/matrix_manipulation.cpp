@@ -6,7 +6,8 @@ void my_geom::get_T_matrix(const cv::Matx33d& R, const cv::Vec3d& t, cv::Matx44d
     T.get_minor<3, 1>(0, 3) = t;
 }
 
-void my_geom::get_T_matrix(const geometry_msgs::msg::PoseStamped::SharedPtr& pose, cv::Matx44d& T)
+void my_geom::get_T_matrix(
+    const geometry_msgs::msg::PoseStamped::SharedPtr& pose, cv::Matx44d& T)
 {
     
     // Extract the translation (x, y, z)
@@ -24,5 +25,11 @@ void my_geom::get_T_matrix(const geometry_msgs::msg::PoseStamped::SharedPtr& pos
     pose->pose.orientation.
     */
 
+
+}
+
+void my_geom::convert_keypoints_to_point2f(
+    const std::vector<cv::KeyPoint>& keypoints , std::vector<cv::Point2f>& points )
+{
 
 }

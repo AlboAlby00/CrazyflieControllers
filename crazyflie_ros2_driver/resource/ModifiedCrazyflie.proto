@@ -82,8 +82,8 @@ PROTO ModifiedCrazyflie [
       Camera {
         translation 0.03 0 0.01
         fieldOfView 0.87
-        width 324
-        height 324
+        width 640
+        height 480
       }
       GPS {
       }

@@ -7,13 +7,14 @@ import os
 
 def generate_launch_description():
 
+    package_dir = get_package_share_directory('crazyflie_localization')
 
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
         output='screen',
-        #arguments=['-d', package_dir+"/config/camera.rviz"]
+        arguments=['-d', package_dir+"/rviz/visual_odometry.rviz"]
     )
 
     intrinsics = os.path.join(
