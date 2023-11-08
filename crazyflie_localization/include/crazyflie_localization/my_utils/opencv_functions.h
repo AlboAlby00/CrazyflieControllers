@@ -8,5 +8,6 @@
 namespace my_utils
 {
     double calculate_distance(const cv::Point2f &p1, const cv::Point2f &p2);
+    void save_image(const cv::Mat& image);
 
 }

@@ -24,4 +24,28 @@ void my_geom::get_3x4_T_matrix(const cv::Mat& R, const cv::Mat& t, cv::Mat& T)
             R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0));
 }
 
+cv::Mat my_geom::get_3x4_identity()
+{
+    return (cv::Mat_<float>(3, 4) <<
+            1, 0, 0, 0,
+            0,  1, 0, 0,
+            0, 0, 1, 0);
+}
+
+
+void my_geom::omogeneous_to_3d(const cv::Mat& points_4d, std::list<cv::Point3d>& points_3d)
+{
+    for ( int i=0; i<points_4d.cols; i++ )
+    {
+        cv::Mat x = points_4d.col(i);
+        x /= x.at<float>(3,0); 
+        cv::Point3d p (
+            x.at<float>(0,0), 
+            x.at<float>(1,0), 
+            x.at<float>(2,0) 
+        );
+        points_3d.push_back( p );
+    }
+}
+
 

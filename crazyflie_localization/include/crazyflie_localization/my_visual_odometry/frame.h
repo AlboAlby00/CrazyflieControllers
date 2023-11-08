@@ -18,16 +18,17 @@ namespace my_vo{
             int _id;            // id of this frame
             double _time_stamp; // when it is recorded
 
-                // -- image features
-
             std::vector<cv::KeyPoint> keypoints;
             cv::Mat descriptors;
             cv::Mat image;
             cv::Mat get_image_with_keypoints();
+
+            cv::Mat _T_world_to_camera;
             
             
         private:
             static const cv::Ptr<cv::FeatureDetector> _detector;
+            static int _factory_id;
             
 
     };

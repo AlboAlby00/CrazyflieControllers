@@ -12,19 +12,29 @@ find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
 
 include_directories(include)
 
+set(VO_DEPENDENCIES rclcpp sensor_msgs geometry_msgs cv_bridge visualization_msgs tf2 tf2_geometry_msgs)
 file(GLOB VO_SOURCES src/visual_odometry_node.cpp src/my_visual_odometry/*.cpp src/my_geometry/*.cpp src/my_utils/*.cpp)
 add_executable(visual_odometry_node ${VO_SOURCES})
-ament_target_dependencies(visual_odometry_node rclcpp sensor_msgs cv_bridge visualization_msgs)
+ament_target_dependencies(visual_odometry_node ${VO_DEPENDENCIES})
 target_link_libraries(visual_odometry_node ${OpenCV_LIBS})
+
+set(TF_DEPENDENCIES rclcpp std_msgs tf2 geometry_msgs tf2_ros)
+add_executable(tf_broadcaster_node src/tf_broadcaster_node.cpp)
+ament_target_dependencies(tf_broadcaster_node ${TF_DEPENDENCIES})
+
 
 install(DIRECTORY launch config rviz
   DESTINATION share/${PROJECT_NAME}/)
 
 
-install(TARGETS visual_odometry_node
+install(TARGETS visual_odometry_node tf_broadcaster_node
   DESTINATION lib/${PROJECT_NAME})
 
 # Install Python modules

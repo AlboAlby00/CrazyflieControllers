@@ -5,6 +5,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
 import os
 
+
 def generate_launch_description():
 
     package_dir = get_package_share_directory('crazyflie_localization')
@@ -18,9 +19,9 @@ def generate_launch_description():
         }.items()
     )
 
-    joystick = IncludeLaunchDescription(launch_description_source =
-        PythonLaunchDescriptionSource([get_package_share_directory(
-            'crazyflie_teleop') + '/launch/joystick.launch.py']))
+    joystick = IncludeLaunchDescription(
+        launch_description_source = PythonLaunchDescriptionSource([
+            get_package_share_directory('crazyflie_teleop') + '/launch/joystick.launch.py']))
     
     attitude_controller = Node(
         package='crazyflie_controllers',
@@ -51,10 +52,18 @@ def generate_launch_description():
         parameters=[intrinsics]
     )
 
+    tf_broadcaster_node = Node(
+        package="crazyflie_localization",
+        executable="tf_broadcaster_node",
+        name="tf_broadcaster_node",
+        output='screen',
+    )
+
     return LaunchDescription([
         simulation,
         rviz_node,
         visual_odometry_node,
+        tf_broadcaster_node,
         joystick,
         attitude_controller
     ])

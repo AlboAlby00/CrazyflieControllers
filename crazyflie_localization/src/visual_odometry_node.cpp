@@ -2,7 +2,7 @@
 
 
 VisualOdometryNode::VisualOdometryNode() : Node("visual_odometry_node"),
-     _current_pose(cv::Matx44d::eye()), _vo(new my_vo::VisualOdometry)
+     _vo(new my_vo::VisualOdometry)
 {
     this->declare_parameter("fx",0.0); double fx = this->get_parameter("fx").as_double();
     this->declare_parameter("fy",0.0); double fy = this->get_parameter("fy").as_double();
@@ -32,8 +32,8 @@ VisualOdometryNode::VisualOdometryNode() : Node("visual_odometry_node"),
     _pub_map = this->create_publisher<visualization_msgs::msg::Marker>(
             "/crazyflie/map", 10);
 
-    _timer_map = this->create_wall_timer(
-            std::chrono::seconds(1), std::bind(&VisualOdometryNode::_mapCallback, this));
+    _timer_pub = this->create_wall_timer(
+            std::chrono::seconds(1), std::bind(&VisualOdometryNode::_pubCallback, this));
     
 }
 
@@ -67,19 +67,19 @@ void VisualOdometryNode::_newImageCallback(const sensor_msgs::msg::Image::Shared
 
 }
 
-void VisualOdometryNode::_mapCallback()
+void VisualOdometryNode::_pubCallback()
 {
     // publish map
 
     // Create a Marker message
     visualization_msgs::msg::Marker marker_msg;
-    marker_msg.header.frame_id = "map"; // Set your desired frame
+    marker_msg.header.frame_id = "map";
     marker_msg.header.stamp = now();
     marker_msg.ns = "map";
     marker_msg.id = 0;
     marker_msg.type = visualization_msgs::msg::Marker::SPHERE_LIST;
     marker_msg.action = visualization_msgs::msg::Marker::ADD;
-    marker_msg.scale.x = 0.05; // Set your desired scale
+    marker_msg.scale.x = 0.05; 
     marker_msg.scale.y = 0.05;
     marker_msg.scale.z = 0.05;
     marker_msg.color.r = 1.0;
@@ -95,8 +95,39 @@ void VisualOdometryNode::_mapCallback()
         ros_point.z = cv_point.z;
         marker_msg.points.push_back(ros_point);
     }
-
     _pub_map->publish(marker_msg);
+
+    // publish last frame pose
+
+    cv::Matx34d last_frame_pose = _vo->get_current_pose();
+
+    tf2::Vector3 position;  
+    tf2::Matrix3x3 rot_robot; 
+    for (int i = 0; i < 3; ++i) {
+        position[i] = last_frame_pose(i, 3);
+        for (int j = 0; j < 3; ++j) {
+            rot_robot[i][j] = last_frame_pose(i, j);
+        }
+    }
+
+    tf2::Quaternion orientation;
+    rot_robot.getRotation(orientation);
+
+    geometry_msgs::msg::PoseStamped pose_msg;
+    pose_msg.header.frame_id = "base_link";
+    pose_msg.header.stamp = now();
+
+    pose_msg.pose.position.x = position[0];
+    pose_msg.pose.position.y = position[1];
+    pose_msg.pose.position.z = position[2]; 
+
+    pose_msg.pose.orientation.x = orientation.x();
+    pose_msg.pose.orientation.y = orientation.y();  
+    pose_msg.pose.orientation.z = orientation.z();  
+    pose_msg.pose.orientation.w = orientation.w();
+
+    _pub_camera_pose->publish(pose_msg);
+
 }
 
 

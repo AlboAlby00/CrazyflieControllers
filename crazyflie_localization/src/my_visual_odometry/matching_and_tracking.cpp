@@ -1,10 +1,9 @@
 #include "crazyflie_localization/my_visual_odometry/matching_and_tracking.h"
 
 void my_vo::estimate_pose(
-    const std::vector<cv::KeyPoint> keypoints_1, const std::vector<cv::KeyPoint> keypoints_2, const cv::Mat& K,
+    const std::vector<cv::KeyPoint>& keypoints_1, const std::vector<cv::KeyPoint>& keypoints_2, const cv::Mat& K,
                 const std::vector<cv::DMatch>& matches, cv::Mat &R, cv::Mat &t)
 {
-    std::cout << "f0" << std::endl;
     //−− Convert the matching point to the form of vector<Point2f>
     std::vector<cv::Point2f> points1;
     std::vector<cv::Point2f> points2;
@@ -13,20 +12,16 @@ void my_vo::estimate_pose(
         points1.push_back(keypoints_1[matches[i].queryIdx].pt);
         points2.push_back(keypoints_2[matches[i].trainIdx].pt);
     }
-    std::cout << "f1" << std::endl;
 
     //−− Calculate essential matrix
     cv::Point2d principal_point( K.at<double>(0,2), K.at<double>(1,2)); // camera principal point
     double focal_length =  K.at<double>(0,0); // camera focal length
-    cv::Mat essential_matrix;
-    essential_matrix = cv::findEssentialMat(points1, points2, focal_length,principal_point);
-
-    std::cout << essential_matrix << std::endl;
-    //−− Recover rotation and translation from the essential matrix.
-    cv::recoverPose(essential_matrix, points1, points2, R, t, focal_length,
-        principal_point);
-
-    std::cout << "f3" << std::endl;
+    cv::Mat essential_matrix, mask;
+    essential_matrix = cv::findEssentialMat(
+        points1, points2, focal_length,principal_point, cv::RANSAC, 0.999, 1.0, mask);
+    
+    cv::recoverPose(
+        essential_matrix, points1, points2, R, t, focal_length, principal_point, mask);
 }
 
 void my_vo::track_features(
@@ -76,7 +71,7 @@ double my_vo::compute_keypoints_mean_distance(
         total_distance += distance;
     }
     double mean_distance = total_distance / static_cast<double>(matches.size());
-    std::cout << "mean_distance: " << mean_distance << std::endl;
+    //std::cout << "mean_distance: " << mean_distance << std::endl;
 
     return mean_distance;
 }
