@@ -23,8 +23,9 @@ namespace my_vo{
         public:
             typedef std::shared_ptr<VisualOdometry> Ptr;
             VisualOdometry();
+            void add_frame_to_buffer(Frame::Ptr frame);
             bool is_initialized(); 
-            cv::Matx44d get_current_pose(); 
+            cv::Matx34d get_current_pose(); 
             void add_new_image(cv::Mat image); 
             void set_intrinsics(double fx, double fy, double cx, double cy);
             cv::Mat get_last_image_with_keypoints();
@@ -38,8 +39,8 @@ namespace my_vo{
                 LOST
             };
             VOState _vo_state;
-            const int MIN_FEATURES_TO_START_TRACKING = 15;
-            const int MIN_FEATURES_PIXEL_DISTANCE = 50;
+            const int MIN_FEATURES_TO_START_TRACKING = 30;
+            const int MIN_FEATURES_PIXEL_DISTANCE = 75;
 
         private:
             // Initialization
@@ -48,7 +49,9 @@ namespace my_vo{
                     const cv::Mat K, const std::vector<cv::DMatch>& matches);
             cv::Mat _K;
 
-            std::list<Frame::Ptr> _frames;
+            std::queue<Frame::Ptr> _buffer_frames;
+            std::unordered_map<int, Frame::Ptr> _keyframes;
+
             Frame::Ptr _reference_keyframe;
             
 

@@ -18,7 +18,7 @@ namespace my_vo
         const Frame::Ptr frame_1, const Frame::Ptr frame_2,
                     std::vector<cv::DMatch>& matches);
     void estimate_pose(   
-        const std::vector<cv::KeyPoint> keypoints_1, const std::vector<cv::KeyPoint> keypoints_2, const cv::Mat& K,
+        const std::vector<cv::KeyPoint>& keypoints_1, const std::vector<cv::KeyPoint>& keypoints_2, const cv::Mat& K,
                 const std::vector<cv::DMatch>& matches, cv::Mat &R, cv::Mat &t);
     void convert_keypoints_to_point2f(
         const std::vector<cv::KeyPoint>& keypoints_1 , const std::vector<cv::KeyPoint>& keypoints_2 , const cv::Mat K,
