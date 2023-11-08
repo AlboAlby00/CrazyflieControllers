@@ -8,8 +8,10 @@
 #include <stdio.h>
 
 #include "crazyflie_localization/my_geometry/camera.h"
+#include "crazyflie_localization/my_geometry/matrix_manipulation.h"
 #include "crazyflie_localization/my_visual_odometry/frame.h" 
 #include "crazyflie_localization/my_visual_odometry/matching_and_tracking.h"
+
 
 namespace my_vo{
 
@@ -36,14 +38,18 @@ namespace my_vo{
                 LOST
             };
             VOState _vo_state;
-            const short MIN_FEATURES_TO_START_TRACKING = 15;
+            const int MIN_FEATURES_TO_START_TRACKING = 15;
+            const int MIN_FEATURES_PIXEL_DISTANCE = 50;
 
         private:
             // Initialization
-            void _estimateMotionAnd3DPoints();
-            bool _isVoGoodToInit();
+            bool _is_ready_for_initialization(
+                const std::vector<cv::KeyPoint>& keypoints_1 , const std::vector<cv::KeyPoint>& keypoints_2 , 
+                    const cv::Mat K, const std::vector<cv::DMatch>& matches);
             cv::Mat _K;
+
             std::list<Frame::Ptr> _frames;
+            Frame::Ptr _reference_keyframe;
             
 
     };

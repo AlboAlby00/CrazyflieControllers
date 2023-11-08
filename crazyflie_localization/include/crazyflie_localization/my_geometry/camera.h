@@ -12,24 +12,5 @@ namespace my_geom{
     cv::Point2f cam2pixel(const cv::Point3f &p, const cv::Mat &K);
     cv::Point2f cam2pixel(const cv::Mat &p, const cv::Mat &K);
     cv::Mat world2camera(const cv::Point3f &p, const cv::Mat &T_world_to_cam);
-
-    class Camera { 
-        
-        public:
-            typedef std::shared_ptr<Camera> Ptr;
-            double fx_, fy_, cx_, cy_;
-            cv::Mat K_;
-            Camera(double fx, double fy, double cx, double cy) : fx_(fx), fy_(fy), cx_(cx), cy_(cy)
-            {
-                K_ = (cv::Mat_<double>(3, 3) << fx, 0, cx, 0, fy, cy, 0, 0, 1);
-            }
-            Camera(cv::Mat K)
-            {
-                fx_ = K.at<double>(0, 0);
-                fy_ = K.at<double>(1, 1);
-                cx_ = K.at<double>(0, 2);
-                cy_ = K.at<double>(1, 2);
-                K_ = K;
-            }
-};
+    
 }
