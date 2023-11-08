@@ -39,14 +39,12 @@ VisualOdometryNode::VisualOdometryNode() : Node("visual_odometry_node"),
 
 void VisualOdometryNode::_newImuPoseCallback(const geometry_msgs::msg::Point::SharedPtr msg)
 {
-    //msg->pose.orientation
-    //msg->pose.position
+    RCLCPP_DEBUG(this->get_logger(), "imu pose x is %f", msg->x);
 }
 
 void VisualOdometryNode::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr msg)
 {
-    //msg->pose.orientation
-    //msg->pose.position
+    RCLCPP_DEBUG(this->get_logger(), "imu msg received at %d", msg->header.stamp.sec);
 }
 
 void VisualOdometryNode::_newImageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
@@ -67,84 +65,6 @@ void VisualOdometryNode::_newImageCallback(const sensor_msgs::msg::Image::Shared
     msg_image_with_keypoints.encoding = msg->encoding;
     _pub_feature_image->publish(msg_image_with_keypoints);
 
-    
-
-    
-    /*
-    // first image arrives
-    if(_old_image.data == nullptr ) 
-    {
-        _old_image = new_image;
-        return;
-    }
-
-    // select and match features
-    std::vector<cv::KeyPoint> keypoints_1, keypoints_2;
-    std::vector<cv::DMatch> matches;
-    _tracker.track_features(_old_image, new_image, keypoints_1, keypoints_2, matches);
-    const std::size_t number_of_matches = matches.size();
-    RCLCPP_INFO(this->get_logger(), "number of good matches is %ld", number_of_matches);
-
-    if(number_of_matches < 8)
-    {
-        return;
-    }
-
-    // estimate R, t
-    cv::Mat R,t;
-    _poseEstimator.estimate(keypoints_1,keypoints_2,matches,R,t);
-
-    // calculate next pose
-    cv::Matx44d T;
-    my_geom::get_T_matrix(R,t,T);
-    _current_pose = _current_pose * T.inv();
-    
-
-
-    // Convert the rotation to a quaternion
-    cv::Matx33d rotation_matrix;
-    rotation_matrix = _current_pose.get_minor<3,3>(0,0);
-    cv::Matx33d identity_matrix = cv::Matx33d::eye();
-    cv::Matx33d rotation_difference = rotation_matrix - identity_matrix;
-    cv::Mat rotation_vector;
-    cv::Rodrigues(rotation_difference, rotation_vector);
-
-    // publish R,t
-    geometry_msgs::msg::PoseStamped camera_pose;
-    camera_pose.header.stamp = get_clock()->now();
-    camera_pose.header.frame_id = "camera";
-
-    // Set the position using the translation
-    camera_pose.pose.position.x = t.at<double>(0, 0);
-    camera_pose.pose.position.y = t.at<double>(1, 0);
-    camera_pose.pose.position.z = t.at<double>(2, 0);
-
-    // Set the orientation using the rotation vector
-    camera_pose.pose.orientation.x = rotation_vector.at<double>(0, 0);
-    camera_pose.pose.orientation.y = rotation_vector.at<double>(1, 0);
-    camera_pose.pose.orientation.z = rotation_vector.at<double>(2, 0);
-    camera_pose.pose.orientation.w = 1.0;
-
-    _pub_camera_pose->publish(camera_pose);
-
-    cv::Mat new_image_with_keypoints;
-    cv::drawKeypoints(new_image, keypoints_1, new_image_with_keypoints, cv::Scalar(0, 0, 255), 
-            cv::DrawMatchesFlags::DEFAULT);
-    
-    // Convert the OpenCV image back to a sensor_msgs::msg::Image
-    cv_bridge::CvImagePtr cv_ptr = std::make_shared<cv_bridge::CvImage>();
-    cv_ptr->image = new_image_with_keypoints;
-    sensor_msgs::msg::Image image_with_features = *cv_ptr->toImageMsg();
-
-
-    image_with_features.header.stamp = get_clock()->now();
-    image_with_features.header.frame_id = "camera";
-    image_with_features.encoding = msg->encoding;
-    _pub_feature_image->publish(image_with_features);
-
-    _old_image = new_image;
-
-    */
 }
 
 void VisualOdometryNode::_mapCallback()
@@ -155,13 +75,13 @@ void VisualOdometryNode::_mapCallback()
     visualization_msgs::msg::Marker marker_msg;
     marker_msg.header.frame_id = "map"; // Set your desired frame
     marker_msg.header.stamp = now();
-    marker_msg.ns = "my_namespace";
+    marker_msg.ns = "map";
     marker_msg.id = 0;
     marker_msg.type = visualization_msgs::msg::Marker::SPHERE_LIST;
     marker_msg.action = visualization_msgs::msg::Marker::ADD;
-    marker_msg.scale.x = 0.1; // Set your desired scale
-    marker_msg.scale.y = 0.1;
-    marker_msg.scale.z = 0.1;
+    marker_msg.scale.x = 0.05; // Set your desired scale
+    marker_msg.scale.y = 0.05;
+    marker_msg.scale.z = 0.05;
     marker_msg.color.r = 1.0;
     marker_msg.color.g = 0.0;
     marker_msg.color.b = 0.0;

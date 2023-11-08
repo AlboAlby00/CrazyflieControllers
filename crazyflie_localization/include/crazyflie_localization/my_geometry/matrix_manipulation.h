@@ -10,7 +10,7 @@ namespace my_geom
 {
     void get_T_matrix(const geometry_msgs::msg::PoseStamped::SharedPtr& pose, cv::Matx44d& T);
     void get_T_matrix(const cv::Matx33d& R, const cv::Vec3d& t, cv::Matx44d& T );
-    void convert_keypoints_to_point2f(const std::vector<cv::KeyPoint>& keypoints, std::vector<cv::Point2f>& points );
+    void get_3x4_T_matrix(const cv::Mat& R, const cv::Mat& t, cv::Mat& T);
     
 
 }

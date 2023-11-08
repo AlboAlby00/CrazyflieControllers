@@ -2,7 +2,7 @@
 
 void my_vo::estimate_pose(
     const std::vector<cv::KeyPoint> keypoints_1, const std::vector<cv::KeyPoint> keypoints_2, const cv::Mat& K,
-                    std::vector<cv::DMatch> matches, cv::Mat &R, cv::Mat &t)
+                const std::vector<cv::DMatch>& matches, cv::Mat &R, cv::Mat &t)
 {
     std::cout << "f0" << std::endl;
     //−− Convert the matching point to the form of vector<Point2f>
@@ -17,7 +17,7 @@ void my_vo::estimate_pose(
 
     //−− Calculate essential matrix
     cv::Point2d principal_point( K.at<double>(0,2), K.at<double>(1,2)); // camera principal point
-    double focal_length =  K.at<double>(0,0); // camera focal length, calibrated in TUM dataset
+    double focal_length =  K.at<double>(0,0); // camera focal length
     cv::Mat essential_matrix;
     essential_matrix = cv::findEssentialMat(points1, points2, focal_length,principal_point);
 
@@ -50,4 +50,33 @@ void my_vo::track_features(
 
     matches = good_matches;
 
+}
+
+void my_vo::convert_keypoints_to_point2f(
+    const std::vector<cv::KeyPoint>& keypoints_1 , const std::vector<cv::KeyPoint>& keypoints_2 , const cv::Mat K,
+            std::vector<cv::DMatch>& matches, std::vector<cv::Point2f>& points_1, std::vector<cv::Point2f>& points_2)
+{
+    for ( cv::DMatch m: matches )
+    {
+        points_1.push_back( my_geom::pixel2CamNormPlane( keypoints_1[m.queryIdx].pt, K) );
+        points_2.push_back( my_geom::pixel2CamNormPlane( keypoints_2[m.trainIdx].pt, K) );
+    }
+}
+
+double my_vo::compute_keypoints_mean_distance(
+                const std::vector<cv::KeyPoint> keypoints_1, const std::vector<cv::KeyPoint> keypoints_2, 
+                    const std::vector<cv::DMatch>& matches)
+{
+    double total_distance = 0.0;
+    for (const cv::DMatch& match : matches) {
+        cv::Point2f pt1 = keypoints_1[match.queryIdx].pt;
+        cv::Point2f pt2 = keypoints_2[match.trainIdx].pt;
+        
+        double distance = my_utils::calculate_distance(pt1, pt2); // Euclidean distance between keypoints
+        total_distance += distance;
+    }
+    double mean_distance = total_distance / static_cast<double>(matches.size());
+    std::cout << "mean_distance: " << mean_distance << std::endl;
+
+    return mean_distance;
 }

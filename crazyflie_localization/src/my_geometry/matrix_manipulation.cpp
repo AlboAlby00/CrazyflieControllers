@@ -13,23 +13,15 @@ void my_geom::get_T_matrix(
     // Extract the translation (x, y, z)
     cv::Vec3d t(pose->pose.position.x, pose->pose.position.y, pose->pose.position.z);
     cv::Vec4d quaternion(pose->pose.orientation.w, pose->pose.orientation.x, pose->pose.orientation.y, pose->pose.orientation.z);
-/*
-    // Convert quaternion to a rotation matrix
-    cv::Matx33d R;
-    cv::Rodrigues(quaternion.toRotationMatrix(), R);
-
-    // Create a 4x4 transformation matrix
-    T.get_minor<3, 3>(0, 0) = R;
-    T.get_minor<3, 1>(0, 3) = t;
-
-    pose->pose.orientation.
-    */
-
 
 }
 
-void my_geom::convert_keypoints_to_point2f(
-    const std::vector<cv::KeyPoint>& keypoints , std::vector<cv::Point2f>& points )
+void my_geom::get_3x4_T_matrix(const cv::Mat& R, const cv::Mat& t, cv::Mat& T)
 {
-
+    T = (cv::Mat_<float>(3, 4) <<
+            R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), t.at<double>(0, 0),
+            R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), t.at<double>(1, 0),
+            R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0));
 }
+
+
