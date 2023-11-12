@@ -10,15 +10,20 @@ namespace my_vo{
     class Frame {
         
         public:
+
             typedef std::shared_ptr<Frame> Ptr;
             Frame() {}
             ~Frame() {}
-            static Frame::Ptr createFrame(cv::Mat rgb_img, double time_stamp = -1);
+            static Frame::Ptr createFrame(cv::Mat rgb_img, cv::Mat K, double time_stamp = -1);
 
             int _id;            // id of this frame
             double _time_stamp; // when it is recorded
+            cv::Mat _K;  // camera intrinsics
 
             std::vector<cv::KeyPoint> keypoints;
+
+            //std::vector<cv::Point3f> point_on_map;
+
             cv::Mat descriptors;
             cv::Mat image;
             cv::Mat get_image_with_keypoints();

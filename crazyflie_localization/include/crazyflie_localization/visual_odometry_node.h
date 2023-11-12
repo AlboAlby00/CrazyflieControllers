@@ -2,6 +2,7 @@
 
 #include "crazyflie_localization/my_geometry/matrix_manipulation.h"
 #include "crazyflie_localization/my_visual_odometry/visual_odometry.h"
+#include "crazyflie_localization/my_utils/ros_conversions.h"
 
 #include <cv_bridge/cv_bridge.h>
 #include <rclcpp/rclcpp.hpp>

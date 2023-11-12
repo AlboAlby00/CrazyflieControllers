@@ -32,6 +32,15 @@ cv::Mat my_geom::get_3x4_identity()
             0, 0, 1, 0);
 }
 
+cv::Mat my_geom::convert_Rt_to_T(const cv::Mat &R, const cv::Mat &t)
+{
+    cv::Mat T = (cv::Mat_<double>(4, 4) << R.at<double>(0, 0), R.at<double>(0, 1), R.at<double>(0, 2), t.at<double>(0, 0),
+                 R.at<double>(1, 0), R.at<double>(1, 1), R.at<double>(1, 2), t.at<double>(1, 0),
+                 R.at<double>(2, 0), R.at<double>(2, 1), R.at<double>(2, 2), t.at<double>(2, 0),
+                 0, 0, 0, 1);
+    return T;
+}
+
 
 void my_geom::omogeneous_to_3d(const cv::Mat& points_4d, std::list<cv::Point3d>& points_3d)
 {
@@ -46,6 +55,12 @@ void my_geom::omogeneous_to_3d(const cv::Mat& points_4d, std::list<cv::Point3d>&
         );
         points_3d.push_back( p );
     }
+}
+
+cv::Mat my_geom::convert_point3f_to_homogeneous(const cv::Point3f& point)
+{
+    cv::Mat omogeneous_point = (cv::Mat_<float>(4, 1) << point.x, point.y, point.z, 1);
+    return omogeneous_point;
 }
 
 

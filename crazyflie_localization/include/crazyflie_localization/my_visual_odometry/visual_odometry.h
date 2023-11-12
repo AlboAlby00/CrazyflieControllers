@@ -11,6 +11,8 @@
 #include "crazyflie_localization/my_geometry/matrix_manipulation.h"
 #include "crazyflie_localization/my_visual_odometry/frame.h" 
 #include "crazyflie_localization/my_visual_odometry/matching_and_tracking.h"
+#include "crazyflie_localization/my_datastructures/map_point.h"
+#include "crazyflie_localization/my_datastructures/map.h"
 
 
 namespace my_vo{
@@ -18,14 +20,14 @@ namespace my_vo{
     class VisualOdometry
     {   
         public:
-            std::list<cv::Point3d> map;
+            my_ds::Map::Ptr map;
 
         public:
             typedef std::shared_ptr<VisualOdometry> Ptr;
             VisualOdometry();
             void add_frame_to_buffer(Frame::Ptr frame);
             bool is_initialized(); 
-            cv::Matx34d get_current_pose(); 
+            cv::Mat get_current_pose(); 
             void add_new_image(cv::Mat image); 
             void set_intrinsics(double fx, double fy, double cx, double cy);
             cv::Mat get_last_image_with_keypoints();
@@ -48,6 +50,7 @@ namespace my_vo{
                 const std::vector<cv::KeyPoint>& keypoints_1 , const std::vector<cv::KeyPoint>& keypoints_2 , 
                     const cv::Mat K, const std::vector<cv::DMatch>& matches);
             cv::Mat _K;
+            void _add_points_to_map(const std::list<cv::Point3d>& points_3d, const cv::Mat& points_3d_descriptors);
 
             std::queue<Frame::Ptr> _buffer_frames;
             std::unordered_map<int, Frame::Ptr> _keyframes;

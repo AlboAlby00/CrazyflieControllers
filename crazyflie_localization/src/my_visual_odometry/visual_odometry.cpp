@@ -2,7 +2,7 @@
 
 my_vo::VisualOdometry::VisualOdometry() : _vo_state(VOState::BLANK)
 {
-
+    map = std::make_shared<my_ds::Map>();
 }
 
 void my_vo::VisualOdometry::set_intrinsics(double fx, double fy, double cx, double cy)
@@ -24,9 +24,9 @@ bool my_vo::VisualOdometry::is_initialized()
     return _vo_state != VOState::BLANK && _vo_state != VOState::DOING_INITIALIZATION;
 }
 
-cv::Matx34d my_vo::VisualOdometry::get_current_pose()
+cv::Mat my_vo::VisualOdometry::get_current_pose()
 {
-    cv::Mat identity = my_geom::get_3x4_identity();
+    cv::Mat identity = cv::Mat::eye(4,4,CV_64F);
     cv::Mat pose = is_initialized() ? _buffer_frames.back()->_T_world_to_camera : identity;
 
     return pose;
@@ -38,8 +38,8 @@ void my_vo::VisualOdometry::add_new_image(cv::Mat image)
 
     if(_vo_state == VOState::BLANK)
     {
-        my_vo::Frame::Ptr frame = my_vo::Frame::createFrame(image);
-        frame->_T_world_to_camera = my_geom::get_3x4_identity();
+        my_vo::Frame::Ptr frame = my_vo::Frame::createFrame(image, _K);
+        frame->_T_world_to_camera = cv::Mat::eye(4,4,CV_64F);
 
         _reference_keyframe = frame;
         _keyframes.insert(std::make_pair(frame->_id, frame));
@@ -53,7 +53,7 @@ void my_vo::VisualOdometry::add_new_image(cv::Mat image)
     } 
     else if (_vo_state ==  VOState::DOING_INITIALIZATION)
     {
-        my_vo::Frame::Ptr current_frame = my_vo::Frame::createFrame(image);
+        my_vo::Frame::Ptr current_frame = my_vo::Frame::createFrame(image, _K);
         add_frame_to_buffer(current_frame);
 
         std::vector<cv::DMatch> matches;
@@ -62,9 +62,9 @@ void my_vo::VisualOdometry::add_new_image(cv::Mat image)
         cv::Mat R,t;
         my_vo::estimate_pose(_reference_keyframe->keypoints,current_frame->keypoints,_K,matches,R,t);
         
-        cv::Mat T1, T2;
-        my_geom::get_3x4_T_matrix(cv::Mat::eye(3,3,CV_64F), cv::Mat::zeros(3,1,CV_64F), T1);
-        my_geom::get_3x4_T_matrix(R, t, T2);
+        cv::Mat T1_3x4, T2_3x4;
+        my_geom::get_3x4_T_matrix(cv::Mat::eye(3,3,CV_64F), cv::Mat::zeros(3,1,CV_64F), T1_3x4);
+        my_geom::get_3x4_T_matrix(R, t, T2_3x4);
 
         bool is_ready = _is_ready_for_initialization(_reference_keyframe->keypoints,current_frame->keypoints,_K,matches);
         if( ! is_ready)
@@ -73,6 +73,8 @@ void my_vo::VisualOdometry::add_new_image(cv::Mat image)
         }
 
         my_utils::save_image(current_frame->get_image_with_keypoints());
+        my_utils::show_matches(_reference_keyframe, current_frame, matches);
+
         std::cout << " t is: " << t << std::endl;
 
         std::cout << "ready for initialization!" << std::endl;
@@ -80,29 +82,78 @@ void my_vo::VisualOdometry::add_new_image(cv::Mat image)
         std::vector<cv::Point2f> points_1, points_2;
         my_vo::convert_keypoints_to_point2f( _reference_keyframe->keypoints, current_frame->keypoints, _K,
                 matches, points_1, points_2);
-
-
+        
         cv::Mat points_4d;
 
-        cv::triangulatePoints( T1, T2, points_1, points_2, points_4d );
+        // triangulate and add points to map
+        cv::triangulatePoints( T1_3x4, T2_3x4, points_1, points_2, points_4d );
 
-        my_geom::omogeneous_to_3d(points_4d, map);
 
-        current_frame->_T_world_to_camera = T2;
+        std::list<cv::Point3d> points_3d;
+        my_geom::omogeneous_to_3d(points_4d, points_3d);
+        cv::Mat points_3d_descriptor;
+        my_vo::get_descriptor_of_points_3d(current_frame->descriptors, matches ,points_3d_descriptor);
+        _add_points_to_map(points_3d, points_3d_descriptor);
 
-        
-        std::cout << " size of map: " << map.size() << std::endl;
+
+        cv::Mat T2_4x4 = my_geom::convert_Rt_to_T(R, t);
+        current_frame->_T_world_to_camera = T2_4x4.inv();
+
 
         _vo_state =  VOState::DOING_TRACKING;
 
     }
     else if (_vo_state ==  VOState::DOING_TRACKING)
     {
-        my_vo::Frame::Ptr current_frame = my_vo::Frame::createFrame(image);
-        current_frame->_T_world_to_camera = my_geom::get_3x4_identity();
+
+        my_vo::Frame::Ptr current_frame = my_vo::Frame::createFrame(image, _K);
+        current_frame->_T_world_to_camera = cv::Mat::eye(4,4,CV_64F);
         add_frame_to_buffer(current_frame);
+
+
+        // map 2d keypoints to map points
+        std::vector<cv::Point2f> points_2d;
+        std::vector<cv::Point3f> points_3d;
+        my_vo::find_2d_3d_correspondences(map, current_frame, points_2d, points_3d);
+
+        //std::cout << "points_2d.size(): " << points_2d.size() << std::endl;
+        //std::cout << "points_3d.size(): " << points_3d.size() << std::endl;
+
+        // estimate rotation and translation using PnP
+
+        cv::Mat rvec(3,1,CV_64F);
+        cv::Mat tvec(3,1,CV_64F);
+
+        cv::Mat distCoeffs(4,1,CV_64F);
+        distCoeffs.at<double>(0) = 0;
+        distCoeffs.at<double>(1) = 0;
+        distCoeffs.at<double>(2) = 0;
+        distCoeffs.at<double>(3) = 0;
+
+        _vo_state = VOState::LOST;
+
+        cv::solvePnPRansac(points_3d, points_2d, _K, distCoeffs, rvec, tvec);
+ 
+        std::cout << "rvec: " << rvec << std::endl;
+        std::cout << "tvec: " << tvec << std::endl;
+
+        // triangulate new points
+
+
     }
     
+}
+
+void my_vo::VisualOdometry::_add_points_to_map(const std::list<cv::Point3d>& points_3d, const cv::Mat& points_3d_descriptors)
+{
+    auto point_3d_iterator = points_3d.begin();
+    for (int i=0; i < points_3d.size(); i++)
+    {
+        my_ds::MapPoint::Ptr map_point = my_ds::MapPoint::createMapPoint(*point_3d_iterator,points_3d_descriptors.row(i));
+        map->insert_map_point(map_point);
+        ++point_3d_iterator;
+    }
+
 }
 
 bool my_vo::VisualOdometry::_is_ready_for_initialization(

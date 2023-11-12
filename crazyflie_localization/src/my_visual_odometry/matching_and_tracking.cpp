@@ -24,6 +24,7 @@ void my_vo::estimate_pose(
         essential_matrix, points1, points2, R, t, focal_length, principal_point, mask);
 }
 
+
 void my_vo::track_features(
         const Frame::Ptr frame_1, const Frame::Ptr frame_2,
                     std::vector<cv::DMatch>& matches)
@@ -74,4 +75,80 @@ double my_vo::compute_keypoints_mean_distance(
     //std::cout << "mean_distance: " << mean_distance << std::endl;
 
     return mean_distance;
+}
+
+void my_vo::get_descriptor_of_points_3d(const cv::Mat& descriptors, const std::vector<cv::DMatch>& matches, 
+                cv::Mat& points_3d_descriptors)
+{
+    std::cout << "get_descriptor_of_points_3d" << std::endl;
+    points_3d_descriptors = cv::Mat(matches.size(), descriptors.cols, descriptors.type());
+    for (int i = 0; i < matches.size(); i++) {
+        int query_idx = matches[i].trainIdx;
+        descriptors.row(query_idx).copyTo(points_3d_descriptors.row(i));
+    }
+
+    //std::cout << "points_3d_descriptors " << points_3d_descriptors.rowRange(0,15) << std::endl;
+    //std::cout << "frame descriptors " << descriptors.rowRange(0,15) << std::endl;
+}
+
+void my_vo::find_2d_3d_correspondences(const my_ds::Map::Ptr& map, const Frame::Ptr frame, 
+        std::vector<cv::Point2f>& points_2d, std::vector<cv::Point3f>& points_3d)
+{
+    std::cout << "find_2d_3d_correspondences" << std::endl;
+    std::vector<my_ds::MapPoint::Ptr> candidate_map_points_in_map;
+    std::vector<cv::Point2f> candidate_2d_points_in_image;
+    cv::Mat corresponding_map_points_descriptors_2;
+
+    map->project_map_points_to_frame(
+        frame, candidate_map_points_in_map, candidate_2d_points_in_image, corresponding_map_points_descriptors_2);
+    //std::cout << "candidate_map_points_in_map.size(): " << candidate_map_points_in_map.size() << std::endl;
+    
+    std::vector<cv::KeyPoint> candidate_2d_keypoints_in_image;
+    my_utils::convert_point2f_to_keypoint(candidate_2d_points_in_image, candidate_2d_keypoints_in_image);
+    //std::cout << "candidate_2d_keypoints_in_image.size(): " << candidate_2d_keypoints_in_image.size() << std::endl;
+
+    cv::Mat corresponding_map_points_descriptors = 
+        my_utils::get_descriptors_of_map_points(candidate_map_points_in_map);
+    
+    //std::cout << "corresponding_map_points_descriptors.size(): " << corresponding_map_points_descriptors.size() << std::endl;
+    //std::cout << "corresponding_map_points_descriptors_2.size(): " << corresponding_map_points_descriptors_2.size() << std::endl;
+
+    Frame::Ptr virtual_frame = std::make_shared<Frame>();
+    virtual_frame->keypoints = candidate_2d_keypoints_in_image;
+    virtual_frame->descriptors = corresponding_map_points_descriptors;
+    virtual_frame->image = cv::Mat::zeros(frame->image.rows, frame->image.cols, CV_8UC3);
+
+    //std::cout << "frame->descriptors.size(): " << frame->descriptors.size() << std::endl;
+    //std::cout << "virtual_frame->descriptors.size(): " << virtual_frame->descriptors.size() << std::endl;
+
+    // -q: get an image with the candidate_2d_keypoints_in_image    
+    //my_utils::save_image(virtual_frame->get_image_with_keypoints());
+    //my_utils::save_image(frame->get_image_with_keypoints());
+    
+
+
+    // TODO
+    std::vector<cv::DMatch> matches_2d_3d;
+    track_features(virtual_frame, frame, matches_2d_3d);
+
+    //std::cout << virtual_frame->descriptors.rowRange(0,10) << std::endl;
+
+    my_utils::show_matches(virtual_frame, frame, matches_2d_3d);
+
+    //std::cout << "matches_2d_3d.size(): " << matches_2d_3d.size() << std::endl;
+
+    for (const cv::DMatch& match : matches_2d_3d) {
+        int query_idx = match.queryIdx;
+        int train_idx = match.trainIdx;
+        my_ds::MapPoint::Ptr map_point = candidate_map_points_in_map[query_idx];
+        cv::Point3f point_3d = map_point->_pos;
+        cv::Point2f point_2d = candidate_2d_points_in_image[train_idx];
+        points_2d.push_back(point_2d);
+        points_3d.push_back(point_3d);
+    }
+
+
+
+
+    
 }
