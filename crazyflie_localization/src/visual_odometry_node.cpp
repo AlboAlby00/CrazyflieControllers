@@ -71,62 +71,23 @@ void VisualOdometryNode::_pubCallback()
 {
     // publish map
 
-    // Create a Marker message
     visualization_msgs::msg::Marker marker_msg;
     marker_msg.header.frame_id = "map";
     marker_msg.header.stamp = now();
-    marker_msg.ns = "map";
-    marker_msg.id = 0;
-    marker_msg.type = visualization_msgs::msg::Marker::SPHERE_LIST;
-    marker_msg.action = visualization_msgs::msg::Marker::ADD;
-    marker_msg.scale.x = 0.05; 
-    marker_msg.scale.y = 0.05;
-    marker_msg.scale.z = 0.05;
-    marker_msg.color.r = 1.0;
-    marker_msg.color.g = 0.0;
-    marker_msg.color.b = 0.0;
-    marker_msg.color.a = 1.0;
-    
-    // Convert cv::Point3d to geometry_msgs::msg::Point
-    for (const auto& cv_point : _vo->map ) {
-        geometry_msgs::msg::Point ros_point;
-        ros_point.x = cv_point.x;
-        ros_point.y = cv_point.y;
-        ros_point.z = cv_point.z;
-        marker_msg.points.push_back(ros_point);
-    }
+    my_utils::create_marker_msg(_vo->map, marker_msg);
+
     _pub_map->publish(marker_msg);
 
     // publish last frame pose
 
-    cv::Matx34d last_frame_pose = _vo->get_current_pose();
+    cv::Mat last_frame_opencv_pose = _vo->get_current_pose();
 
-    tf2::Vector3 position;  
-    tf2::Matrix3x3 rot_robot; 
-    for (int i = 0; i < 3; ++i) {
-        position[i] = last_frame_pose(i, 3);
-        for (int j = 0; j < 3; ++j) {
-            rot_robot[i][j] = last_frame_pose(i, j);
-        }
-    }
+    geometry_msgs::msg::PoseStamped pose_ros_msg;
+    pose_ros_msg.header.frame_id = "base_link";
+    pose_ros_msg.header.stamp = now();
+    my_utils::from_cv_to_ros_pose(last_frame_opencv_pose, pose_ros_msg);
 
-    tf2::Quaternion orientation;
-    rot_robot.getRotation(orientation);
-
-    geometry_msgs::msg::PoseStamped pose_msg;
-    pose_msg.header.frame_id = "base_link";
-    pose_msg.header.stamp = now();
-
-    pose_msg.pose.position.x = position[0];
-    pose_msg.pose.position.y = position[1];
-    pose_msg.pose.position.z = position[2]; 
-
-    pose_msg.pose.orientation.x = orientation.x();
-    pose_msg.pose.orientation.y = orientation.y();  
-    pose_msg.pose.orientation.z = orientation.z();  
-    pose_msg.pose.orientation.w = orientation.w();
-
-    _pub_camera_pose->publish(pose_msg);
+    _pub_camera_pose->publish(pose_ros_msg);
 
 }
 

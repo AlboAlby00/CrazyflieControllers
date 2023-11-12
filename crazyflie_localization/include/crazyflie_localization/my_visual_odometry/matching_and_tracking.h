@@ -7,6 +7,7 @@
 #include "crazyflie_localization/my_utils/opencv_functions.h"
 #include "crazyflie_localization/my_visual_odometry/frame.h"
 #include "crazyflie_localization/my_geometry/camera.h"
+#include "crazyflie_localization/my_datastructures/map.h"
 
 namespace my_vo
 {
@@ -23,7 +24,14 @@ namespace my_vo
     void convert_keypoints_to_point2f(
         const std::vector<cv::KeyPoint>& keypoints_1 , const std::vector<cv::KeyPoint>& keypoints_2 , const cv::Mat K,
             std::vector<cv::DMatch>& matches, std::vector<cv::Point2f>& points_1, std::vector<cv::Point2f>& points_2);
+    
     double compute_keypoints_mean_distance(
                 const std::vector<cv::KeyPoint> keypoints_1, const std::vector<cv::KeyPoint> keypoints_2, 
                     const std::vector<cv::DMatch>& matches);
+
+    void get_descriptor_of_points_3d(const cv::Mat& descriptors, const std::vector<cv::DMatch>& matches, 
+                cv::Mat& points_3d_descriptors);
+
+    void find_2d_3d_correspondences(const my_ds::Map::Ptr& map, const Frame::Ptr frame, 
+                std::vector<cv::Point2f>& points_2d, std::vector<cv::Point3f>& points_3d);
 }
