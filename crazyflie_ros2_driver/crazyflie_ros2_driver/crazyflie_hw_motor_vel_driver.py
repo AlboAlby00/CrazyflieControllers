@@ -2,7 +2,6 @@
 import rclpy
 from crazyflie_msgs.msg import MotorVel
 from .crazyradio.base_control_node import BaseControlNode
-from .crazyradio.tools import convert_thrust, radian_to_degree
 
 def map_velocities(in_: float):
     """
@@ -19,7 +18,7 @@ class MotorLevelControlNode(BaseControlNode):
     _is_ready: bool 
     def __init__(self):
         super().__init__()
-        
+        self.get_logger().info("starting motor level control")
         self._is_ready = False
 
         # +++ add callbacks
@@ -59,10 +58,10 @@ class MotorLevelControlNode(BaseControlNode):
         """
         Set motor velocities
         """
-        self.get_logger().debug("received m1: " + str(motor_cmd.m1))
-        self.get_logger().debug("received m2: " + str(motor_cmd.m2))
-        self.get_logger().debug("received m3: " + str(motor_cmd.m3))
-        self.get_logger().debug("received m4: " + str(motor_cmd.m4))
+        # self.get_logger().info("received m1: " + str(motor_cmd.m1))
+        # self.get_logger().info("received m2: " + str(motor_cmd.m2))
+        # self.get_logger().info("received m3: " + str(motor_cmd.m3))
+        # self.get_logger().info("received m4: " + str(motor_cmd.m4))
         if self._is_ready:
             self._motor_control.set_motors([
                 map_velocities(motor_cmd.m1), 
