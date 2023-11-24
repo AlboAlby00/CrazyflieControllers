@@ -21,8 +21,7 @@ namespace my_vo{
             cv::Mat _K;  // camera intrinsics
 
             std::vector<cv::KeyPoint> keypoints;
-
-            //std::vector<cv::Point3f> point_on_map;
+            std::vector<cv::DMatch> matches_2d_3d_with_map;
 
             cv::Mat descriptors;
             cv::Mat image;

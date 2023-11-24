@@ -21,12 +21,13 @@ namespace my_ds
 
             Map() {}
             std::unordered_map<int, MapPoint::Ptr> _map_points;
+            std::unordered_map<int, my_vo::Frame::Ptr> _keyframes;
 
             void insert_map_point(MapPoint::Ptr map_point);
+            void insert_keyframe(my_vo::Frame::Ptr keyframe);
             void project_map_points_to_frame(
                 const my_vo::Frame::Ptr frame, 
                 std::vector<MapPoint::Ptr> &candidate_map_points_in_map, 
-                std::vector<cv::Point2f>  &candidate_2d_points_in_image,
-                cv::Mat &corresponding_map_points_descriptors);
+                std::vector<cv::Point2f>  &candidate_2d_points_in_image);
     };
 }

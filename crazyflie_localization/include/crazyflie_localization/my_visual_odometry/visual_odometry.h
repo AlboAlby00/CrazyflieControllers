@@ -42,18 +42,20 @@ namespace my_vo{
             };
             VOState _vo_state;
             const int MIN_FEATURES_TO_START_TRACKING = 30;
-            const int MIN_FEATURES_PIXEL_DISTANCE = 75;
+            const int MIN_FEATURES_PIXEL_DISTANCE = 100;
+            const double MIN_DISTANCE_BETWEEN_KEYFRAMES = 0.2;
 
         private:
             // Initialization
             bool _is_ready_for_initialization(
                 const std::vector<cv::KeyPoint>& keypoints_1 , const std::vector<cv::KeyPoint>& keypoints_2 , 
                     const cv::Mat K, const std::vector<cv::DMatch>& matches);
+            bool _distance_between_frames_is_enough(const Frame::Ptr frame_1, const Frame::Ptr frame_2);
             cv::Mat _K;
             void _add_points_to_map(const std::list<cv::Point3d>& points_3d, const cv::Mat& points_3d_descriptors);
+            void _add_keyframe(const Frame::Ptr frame);
 
             std::queue<Frame::Ptr> _buffer_frames;
-            std::unordered_map<int, Frame::Ptr> _keyframes;
 
             Frame::Ptr _reference_keyframe;
             

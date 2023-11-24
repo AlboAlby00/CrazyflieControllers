@@ -41,11 +41,8 @@ void my_vo::VisualOdometry::add_new_image(cv::Mat image)
         my_vo::Frame::Ptr frame = my_vo::Frame::createFrame(image, _K);
         frame->_T_world_to_camera = cv::Mat::eye(4,4,CV_64F);
 
-        _reference_keyframe = frame;
-        _keyframes.insert(std::make_pair(frame->_id, frame));
-
+        _add_keyframe(frame);
         add_frame_to_buffer(frame);
-
         my_utils::save_image(frame->get_image_with_keypoints());
 
         _vo_state =  VOState::DOING_INITIALIZATION;
@@ -54,6 +51,7 @@ void my_vo::VisualOdometry::add_new_image(cv::Mat image)
     else if (_vo_state ==  VOState::DOING_INITIALIZATION)
     {
         my_vo::Frame::Ptr current_frame = my_vo::Frame::createFrame(image, _K);
+        current_frame->_T_world_to_camera = _reference_keyframe->_T_world_to_camera;
         add_frame_to_buffer(current_frame);
 
         std::vector<cv::DMatch> matches;
@@ -76,16 +74,16 @@ void my_vo::VisualOdometry::add_new_image(cv::Mat image)
         my_utils::show_matches(_reference_keyframe, current_frame, matches);
 
         std::cout << " t is: " << t << std::endl;
-
         std::cout << "ready for initialization!" << std::endl;
 
         std::vector<cv::Point2f> points_1, points_2;
         my_vo::convert_keypoints_to_point2f( _reference_keyframe->keypoints, current_frame->keypoints, _K,
                 matches, points_1, points_2);
-        
-        cv::Mat points_4d;
 
         // triangulate and add points to map
+        cv::Mat points_4d;
+        std::cout << "T1_3x4: " << T1_3x4 << std::endl;
+        std::cout << "T2_3x4: " << T2_3x4 << std::endl;
         cv::triangulatePoints( T1_3x4, T2_3x4, points_1, points_2, points_4d );
 
 
@@ -95,51 +93,78 @@ void my_vo::VisualOdometry::add_new_image(cv::Mat image)
         my_vo::get_descriptor_of_points_3d(current_frame->descriptors, matches ,points_3d_descriptor);
         _add_points_to_map(points_3d, points_3d_descriptor);
 
-
         cv::Mat T2_4x4 = my_geom::convert_Rt_to_T(R, t);
-        current_frame->_T_world_to_camera = T2_4x4.inv();
+        current_frame->_T_world_to_camera = T2_4x4;
 
+        std::cout << "new pose is: " << current_frame->_T_world_to_camera << std::endl;
 
+        _add_keyframe(current_frame);
         _vo_state =  VOState::DOING_TRACKING;
 
     }
     else if (_vo_state ==  VOState::DOING_TRACKING)
     {
-
         my_vo::Frame::Ptr current_frame = my_vo::Frame::createFrame(image, _K);
-        current_frame->_T_world_to_camera = cv::Mat::eye(4,4,CV_64F);
-        add_frame_to_buffer(current_frame);
+        my_vo::Frame::Ptr last_frame = _buffer_frames.back();
+        current_frame->_T_world_to_camera = last_frame->_T_world_to_camera;
 
+        add_frame_to_buffer(current_frame);
 
         // map 2d keypoints to map points
         std::vector<cv::Point2f> points_2d;
         std::vector<cv::Point3f> points_3d;
-        my_vo::find_2d_3d_correspondences(map, current_frame, points_2d, points_3d);
+        std::vector<cv::DMatch> matches_2d_3d;
+        my_vo::find_2d_3d_correspondences(map, current_frame, points_2d, points_3d, matches_2d_3d);
+        current_frame->matches_2d_3d_with_map = matches_2d_3d;
 
-        //std::cout << "points_2d.size(): " << points_2d.size() << std::endl;
-        //std::cout << "points_3d.size(): " << points_3d.size() << std::endl;
+        cv::Mat T;
+        bool PnP_solution_found = my_vo::get_world_to_camera_T_by_Pnp(points_3d, points_2d, _K, T);
 
-        // estimate rotation and translation using PnP
-
-        cv::Mat rvec(3,1,CV_64F);
-        cv::Mat tvec(3,1,CV_64F);
-
-        cv::Mat distCoeffs(4,1,CV_64F);
-        distCoeffs.at<double>(0) = 0;
-        distCoeffs.at<double>(1) = 0;
-        distCoeffs.at<double>(2) = 0;
-        distCoeffs.at<double>(3) = 0;
-
-        _vo_state = VOState::LOST;
-
-        cv::solvePnPRansac(points_3d, points_2d, _K, distCoeffs, rvec, tvec);
- 
-        std::cout << "rvec: " << rvec << std::endl;
-        std::cout << "tvec: " << tvec << std::endl;
-
+        if (PnP_solution_found)
+        {
+            std::cout << "new pose is: " << T  <<std::endl;
+            current_frame->_T_world_to_camera = T;
+        }
+        else
+        {
+            std::cout << "PnP solution not found" << std::endl;
+            _vo_state = VOState::LOST;
+            return;
+        }
         // triangulate new points
+        if(_distance_between_frames_is_enough(_reference_keyframe, current_frame) && false)
+        {
+            std::cout << "triangulating new points" << std::endl;
 
+            std::vector<cv::DMatch> matches;
+            my_vo::track_features(_reference_keyframe, current_frame, matches);
+            std::vector<cv::Point2f> points_1, points_2;
+            my_vo::convert_keypoints_to_point2f( _reference_keyframe->keypoints, current_frame->keypoints, _K,
+                matches, points_1, points_2);
 
+            //my_utils::show_matches(_reference_keyframe, current_frame, matches);
+
+            // triangulate and add points to map
+            cv::Mat points_4d;
+            cv::Mat reference_frame_T_3x4 = my_geom::get_3x4_T_matrix(_reference_keyframe->_T_world_to_camera);
+            cv::Mat current_frame_T_3x4 = my_geom::get_3x4_T_matrix(current_frame->_T_world_to_camera);
+
+            std::cout << "reference_frame_T_3x4: " << reference_frame_T_3x4 << std::endl;
+            std::cout << "current_frame_T_3x4: " << current_frame_T_3x4 << std::endl;
+            cv::triangulatePoints( reference_frame_T_3x4, current_frame_T_3x4, points_1, points_2, points_4d );
+
+            std::list<cv::Point3d> points_3d;
+            my_geom::omogeneous_to_3d(points_4d, points_3d);
+            cv::Mat points_3d_descriptor;
+            my_vo::get_descriptor_of_points_3d(_reference_keyframe->descriptors, matches ,points_3d_descriptor);
+
+            map->_map_points.clear();
+            _add_points_to_map(points_3d, points_3d_descriptor);
+            _add_keyframe(current_frame);
+
+            _vo_state = VOState::LOST;
+
+        }
     }
     
 }
@@ -170,7 +195,29 @@ bool my_vo::VisualOdometry::_is_ready_for_initialization(
     return enough_correspondence && large_baseline;
 }
 
+bool my_vo::VisualOdometry::_distance_between_frames_is_enough(const Frame::Ptr frame_1, const Frame::Ptr frame_2)
+{
+    cv::Mat T_frame_1_to_frame_2 = frame_1->_T_world_to_camera.inv() * frame_2->_T_world_to_camera;
+
+    cv::Mat R, t;
+    my_geom::convert_T_to_Rt(T_frame_1_to_frame_2, R, t);
+
+    double moved_distance = my_utils::calculate_norm(t);
+
+    std::cout << "moved_distance: " << moved_distance << std::endl;
+    // Satisfy each one will be a good keyframe
+    bool distance_is_enough = moved_distance > MIN_DISTANCE_BETWEEN_KEYFRAMES;
+
+    return distance_is_enough;
+}
+
 cv::Mat my_vo::VisualOdometry::get_last_image_with_keypoints()
 {
     return _buffer_frames.back()->get_image_with_keypoints();
+}
+
+void my_vo::VisualOdometry::_add_keyframe(const Frame::Ptr frame)
+{
+    map->insert_keyframe(frame);
+    _reference_keyframe = frame;
 }

@@ -33,5 +33,8 @@ namespace my_vo
                 cv::Mat& points_3d_descriptors);
 
     void find_2d_3d_correspondences(const my_ds::Map::Ptr& map, const Frame::Ptr frame, 
-                std::vector<cv::Point2f>& points_2d, std::vector<cv::Point3f>& points_3d);
+                std::vector<cv::Point2f>& points_2d, std::vector<cv::Point3f>& points_3d, std::vector<cv::DMatch>& matches_2d_3d);
+
+    bool get_world_to_camera_T_by_Pnp(const std::vector<cv::Point3f>& points_3d, const std::vector<cv::Point2f>& points_2d, 
+                const cv::Mat& K, cv::Mat& T);
 }

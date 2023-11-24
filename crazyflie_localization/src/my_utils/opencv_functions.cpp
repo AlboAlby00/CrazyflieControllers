@@ -9,6 +9,12 @@ double my_utils::calculate_distance(const cv::Point2f &p1, const cv::Point2f &p2
     return sqrt(dx * dx + dy * dy);
 }
 
+double my_utils::calculate_norm(const cv::Mat &t)
+{
+    double inner_product = t.at<double>(0, 0) * t.at<double>(0, 0) + t.at<double>(1, 0) * t.at<double>(1, 0) + t.at<double>(2, 0) * t.at<double>(2, 0);
+    return sqrt(inner_product);
+}
+
 void my_utils::save_image(const cv::Mat& image)
 {
 
@@ -57,9 +63,7 @@ void my_utils::convert_point2f_to_keypoint(const std::vector<cv::Point2f>& point
 {
     for (const auto& point : points)
     {
-        cv::KeyPoint keypoint;
-        keypoint.pt = point;
-        keypoints.push_back(keypoint);
+        keypoints.push_back( cv::KeyPoint(point,10.0) );
     }
 }
 

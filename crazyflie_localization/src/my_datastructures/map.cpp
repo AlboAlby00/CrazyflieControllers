@@ -12,15 +12,25 @@ void my_ds::Map::insert_map_point(MapPoint::Ptr map_point)
     }
 }
 
+void my_ds::Map::insert_keyframe(my_vo::Frame::Ptr keyframe)
+{
+    if (_keyframes.find(keyframe->_id) == _keyframes.end())
+    {
+        _keyframes.insert(make_pair(keyframe->_id, keyframe));
+    }
+    else
+    {
+        _keyframes[keyframe->_id] = keyframe;
+    }
+}
+
 void my_ds::Map::project_map_points_to_frame(
                 const my_vo::Frame::Ptr frame, 
                 std::vector<MapPoint::Ptr> &candidate_map_points_in_map, 
-                std::vector<cv::Point2f> &candidate_2d_points_in_image,
-                cv::Mat &corresponding_map_points_descriptors)
+                std::vector<cv::Point2f> &candidate_2d_points_in_image)
 {
-    cv::Mat T_camera_to_world = frame->_T_world_to_camera.inv();
+    cv::Mat T_camera_to_world = frame->_T_world_to_camera;
     candidate_map_points_in_map.clear();
-    corresponding_map_points_descriptors.release();
 
     for (auto &map_point : _map_points)
     {
@@ -38,7 +48,6 @@ void my_ds::Map::project_map_points_to_frame(
         {
             candidate_map_points_in_map.push_back(map_point.second);
             candidate_2d_points_in_image.push_back(pixel);
-            corresponding_map_points_descriptors.push_back(descriptor);
         }
     }
 }
