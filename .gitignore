@@ -21,4 +21,6 @@ build_vscode
 .vscode
 
 # cache 
-cache
+cache/*
+
+crazyflie_localization/vocabulary/*

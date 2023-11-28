@@ -1,6 +1,8 @@
 from launch import LaunchDescription
 from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 import os
 
 
@@ -8,6 +10,7 @@ def generate_launch_description():
 
     localization_dir = get_package_share_directory('crazyflie_localization')
     orb3_dir = get_package_share_directory('orbslam3')
+    driver_dir = get_package_share_directory('crazyflie_ros2_driver')
 
     rviz_node = Node(
         package='rviz2',
@@ -24,7 +27,7 @@ def generate_launch_description():
 
     orbslam3_odometry_node = Node(
         package='orbslam3',
-        executable='mono-inertial',
+        executable='mono',
         output='screen',
         arguments=[vocabulary_path, camera_info_path],
         remappings=[('/camera', '/crazyflie/camera'),
@@ -39,6 +42,10 @@ def generate_launch_description():
         arguments=['--ros-args', '--log-level', 'info'],
         remappings=[("esp_32/camera", "crazyflie/camera")]
     )
+
+    crazyflie_driver = IncludeLaunchDescription(
+        launch_description_source=PythonLaunchDescriptionSource([
+            driver_dir + '/launch/crazyflie_hw_driver.launch.py']))
 
     return LaunchDescription([
         rviz_node,

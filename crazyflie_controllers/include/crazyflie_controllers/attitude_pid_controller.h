@@ -6,6 +6,7 @@
 #include "crazyflie_msgs/msg/pid_tuner.hpp"
 #include "geometry_msgs/msg/point_stamped.hpp"
 #include "sensor_msgs/msg/imu.hpp"
+#include "crazyflie_msgs/msg/euler_angle.hpp"
 #include "crazyflie_msgs/msg/motor_vel.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
@@ -25,14 +26,17 @@ public:
 private:
     void _newCommandCallback(const crazyflie_msgs::msg::AttitudeCommand::SharedPtr command);
     void _newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data);
+    void _newPIDTunerCallback(const crazyflie_msgs::msg::PidTuner::SharedPtr pid_tune_data);
+    void _newImuCallbackEuler(const crazyflie_msgs::msg::EulerAngle::SharedPtr imu_data);
     void _newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data);
     void _sendCmdMotor();
 
     rclcpp::Subscription<crazyflie_msgs::msg::AttitudeCommand>::SharedPtr _sub_new_position;
     rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr _sub_gps;
-    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr _sub_imu;
+    rclcpp::Subscription<crazyflie_msgs::msg::EulerAngle>::SharedPtr _sub_imu;
+    rclcpp::Subscription<crazyflie_msgs::msg::PidTuner>::SharedPtr _sub_tuner;
     rclcpp::Publisher<crazyflie_msgs::msg::MotorVel>::SharedPtr _pub_motor_vel;
-    rclcpp::TimerBase::SharedPtr _cmd_motor_timer;
+    rclcpp::TimerBase::SharedPtr _cmd_motor_timer; 
 
     double _x;
     double _y;
