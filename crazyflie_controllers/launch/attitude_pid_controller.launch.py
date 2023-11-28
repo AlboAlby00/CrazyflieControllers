@@ -4,7 +4,8 @@ from launch.actions import DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition
-from ament_index_python import get_package_share_directory
+from launch import LaunchDescription
+from ament_index_python import get_package_share_directory 
 
 
 def generate_launch_description():
@@ -14,6 +15,12 @@ def generate_launch_description():
     """
 
     use_joy_param = DeclareLaunchArgument('use_joy', default_value='false')
+
+    use_joy_param = DeclareLaunchArgument(
+        'use_joy',
+        default_value='false',
+        description='Use joystick control (True/False)'
+    )
 
     controller = Node(
         package='crazyflie_controllers',

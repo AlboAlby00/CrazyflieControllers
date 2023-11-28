@@ -19,7 +19,6 @@ namespace my_ds
             cv::Mat _descriptor;   
 
             int _id;
-            //std::vector<unsigned char> color_;
     
         private:
             static int _factory_id;

@@ -37,7 +37,6 @@ void my_vo::track_features(
         [](const cv::DMatch &m1, const cv::DMatch &m2) { return m1.distance < m2.distance; });
     double min_dist = min_max.first->distance;
 
-
     std::vector<cv::DMatch> good_matches;
     for (int i = 0; i < frame_1->descriptors.rows; i++) {
         if (matches[i].distance <= std::max(2 * min_dist, 30.0)) {

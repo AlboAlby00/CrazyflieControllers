@@ -32,7 +32,7 @@ void PositionPID::_newPositionCommandCallback(const crazyflie_msgs::msg::Positio
     _target_y = command->y;
     _target_z = command->z;
     _yaw = command->yaw;
-    RCLCPP_INFO(this->get_logger(), "target updated, x: %f, y: %f, z= %f", _target_x, _target_y, _target_z);
+
 }
 
 void PositionPID::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data)

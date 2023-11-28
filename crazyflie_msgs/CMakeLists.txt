@@ -14,7 +14,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/AttitudeCommand.msg"
   "msg/PositionCommand.msg"
   "msg/PidTuner.msg"
-  "msg/EulerAngle.msg"
   "msg/TargetTransformationVector.msg"
  )
 

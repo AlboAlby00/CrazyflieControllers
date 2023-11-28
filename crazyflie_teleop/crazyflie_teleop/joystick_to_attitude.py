@@ -13,8 +13,8 @@ from sensor_msgs.msg import Joy
 
 import numpy as np
 
-class CmdVelToAttitudeConverter(Node):
 
+class CmdVelToAttitudeConverter(Node):
     def __init__(self) -> None:
         super().__init__('joystick_to_attitude')
         self._joy_sub =  self._sub_new_position = self.create_subscription(
@@ -22,7 +22,8 @@ class CmdVelToAttitudeConverter(Node):
         self._attitude_command_pub =  self.create_publisher(
                 AttitudeCommand, "/crazyflie/pid/attitude_controller", 10 )
         self.get_logger().info("joystick_to_attitude node is running!")
-        
+
+
     def _new_cmd_vel_callback(self, cmd_joy : Joy):
 
         attitude_command = AttitudeCommand()
