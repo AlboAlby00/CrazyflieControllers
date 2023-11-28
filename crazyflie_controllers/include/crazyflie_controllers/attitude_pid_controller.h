@@ -26,7 +26,6 @@ private:
     void _newCommandCallback(const crazyflie_msgs::msg::AttitudeCommand::SharedPtr command);
     void _newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data);
     void _newPIDTunerCallback(const crazyflie_msgs::msg::PidTuner::SharedPtr pid_tune_data);
-    void _newImuCallbackEuler(const sensor_msgs::msg::Imu::SharedPtr imu_data);
     void _newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data);
     void _sendCmdMotor();
 

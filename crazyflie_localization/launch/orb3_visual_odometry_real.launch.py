@@ -23,7 +23,7 @@ def generate_launch_description():
     vocabulary_path = os.path.join(
         orb3_dir, 'vocabulary', 'ORBvoc.txt')
     camera_info_path = os.path.join(
-        localization_dir, 'config', 'orb3_esp32_camera.yaml')
+        localization_dir, 'config', 'orb3_esp32_640_480_camera.yaml')
 
     orbslam3_odometry_node = Node(
         package='orbslam3',

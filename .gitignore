@@ -19,8 +19,9 @@ cmake-build-debug
 # potential local setup files
 build_vscode
 .vscode
-
+venv/
 # cache 
+<<<<<<< HEAD
 <<<<<<< HEAD
 cache/*
 
@@ -28,3 +29,6 @@ crazyflie_localization/vocabulary/*
 =======
 cache
 >>>>>>> 0d9b7e9efb5d1d9244a28c6c8e5649b79eaf1379
+=======
+cache/*
+>>>>>>> main

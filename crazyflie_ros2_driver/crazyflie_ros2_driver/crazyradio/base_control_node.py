@@ -22,7 +22,6 @@ import time
 from cflib.crazyflie.log import LogConfig
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Quaternion
-from crazyflie_msgs.msg import EulerAngle
 from typing import List
 from cflib.crazyflie.log import LogVariable
 import math 
@@ -41,33 +40,32 @@ def simple_log_async(scf, logconf):
     time.sleep(5)
     logconf.stop()
 
-def euler_to_quaternion(roll: float, pitch: float, yaw: float) -> Quaternion:
-    """
-    https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-    """
-    c1 = math.cos(yaw   / 2)
-    c2 = math.cos(pitch / 2)
-    c3 = math.cos(roll  / 2)
-    s1 = math.sin(yaw   / 2)
-    s2 = math.sin(pitch / 2)
-    s3 = math.sin(roll  / 2)
-
-    quaternion = Quaternion()
-    quaternion.w = c1 * c2 * c3 - s1 * s2 * s3
-    quaternion.x = s1 * s2 * c3 + c1 * c2 * s3
-    quaternion.y = s1 * c2 * c3 + c1 * s2 * s3
-    quaternion.z = c1 * s2 * c3 + s1 * c2 * s3
-    
-    return quaternion
 
 class ImuNames:
     _group: str 
     _roll_name: str 
     _pitch_name: str
     _yaw_name: str
-    roll: str 
-    pitch: str 
-    yaw: str
+
+    # https://www.bitcraze.io/documentation/repository/crazyflie-firmware/master/api/logs/#acc
+    _acc_group: str
+    _acc_name_x: str 
+    _acc_name_y: str 
+    _acc_name_z: str
+
+    # https://www.bitcraze.io/documentation/repository/crazyflie-firmware/master/api/logs/#gyro
+    _gyro_group : str
+    _gyro_name_x: str 
+    _gyro_name_y: str 
+    _gyro_name_z: str
+
+    gyro_x: str 
+    gyro_y: str 
+    gyro_z: str 
+
+    acc_x: str 
+    acc_y: str 
+    acc_z: str 
 
     def __init__(self) -> None:
         self._group = "stabilizer"
@@ -75,11 +73,28 @@ class ImuNames:
         self._pitch_name = "pitch"
         self._yaw_name = "yaw"
 
-        self.roll = join_group_and_name(self._group, self._roll_name)
-        self.pitch = join_group_and_name(self._group, self._pitch_name)
-        self.yaw = join_group_and_name(self._group, self._yaw_name)
+        # accelerometer
+        self._acc_group = "acc"
+        self._acc_name_x = "x"
+        self._acc_name_y = "y"
+        self._acc_name_z = "z"
+        self.acc_x = self._join_(self._acc_group, self._acc_name_x)
+        self.acc_y = self._join_(self._acc_group, self._acc_name_y)
+        self.acc_z = self._join_(self._acc_group, self._acc_name_z)
+
+        # gyro
+        self._gyro_group = "gyro"
+        self._gyro_name_x = "x"
+        self._gyro_name_y = "y"
+        self._gyro_name_z = "z"
+        self.gyro_x = self._join_(self._gyro_group, self._gyro_name_x)
+        self.gyro_y = self._join_(self._gyro_group, self._gyro_name_y)
+        self.gyro_z = self._join_(self._gyro_group, self._gyro_name_z)
 
 
+
+    def _join_(self, group: str, name: str):
+        return group + "." + name
 class BaseControlNode(Node):
     """
     Requires child class to call _add_standard_callbacks 
@@ -111,7 +126,7 @@ class BaseControlNode(Node):
         factory = CachedCfFactory(rw_cache="./cache")
         self._synced_cf = factory.construct("radio://0/80/2M/E7E7E7E7E7")
 
-        self.publisher = self.create_publisher(EulerAngle, 'crazyflie/sensor_msgs/imu', 10)
+        self.publisher = self.create_publisher(Imu, 'crazyflie/imu', 20)
 
     def _add_standard_callbacks(self):
         self._synced_cf.cf.fully_connected.add_callback(self._fully_connected)
@@ -125,8 +140,18 @@ class BaseControlNode(Node):
         yaw (ψ): Yaw angle
         """
 
-        log_msg = '[%d][%s]: %s' % (timestamp, logconf.name, data)
-        pitch_msg = '[%d][%s]: %s' % (timestamp, logconf.name, data[self._imu_names_struct.pitch])
+        # log_msg = '[%d][%s]: %s' % (timestamp, logconf.name, data)
+        imu = Imu()
+        imu.angular_velocity.x      = data[self._imu_names_struct.gyro_x]
+        imu.angular_velocity.y      = data[self._imu_names_struct.gyro_y]
+        imu.angular_velocity.z      = data[self._imu_names_struct.gyro_z]
+        
+        imu.linear_acceleration.x   = data[self._imu_names_struct.acc_x]
+        imu.linear_acceleration.y   = data[self._imu_names_struct.acc_y]
+        imu.linear_acceleration.z   = data[self._imu_names_struct.acc_z]
+
+        self.publisher.publish(imu)
+        # pitch_msg = '[%d][%s]: %s' % (timestamp, logconf.name, data[self._imu_names_struct.pitch])
         # self.get_logger().info(pitch_msg)
         # imu = Imu()
         # imu.orientation = euler_to_quaternion(
@@ -134,11 +159,11 @@ class BaseControlNode(Node):
         #     pitch=data[self._imu_names_struct.pitch],
         #     yaw=data[self._imu_names_struct.yaw]
         # )
-        euler = EulerAngle()
-        euler.roll = data[self._imu_names_struct.roll]
-        euler.pitch = data[self._imu_names_struct.pitch]
-        euler.yaw = data[self._imu_names_struct.yaw]
-        self.publisher.publish(euler)
+        # euler = EulerAngle()
+        # euler.roll = data[self._imu_names_struct.roll]
+        # euler.pitch = data[self._imu_names_struct.pitch]
+        # euler.yaw = data[self._imu_names_struct.yaw]
+        # self.publisher.publish(euler)
         # self.publisher.publish(imu)
 
     def _publish_imu(self):
@@ -146,10 +171,14 @@ class BaseControlNode(Node):
         Publishes IMU data to a topic.
         """
         float_type = 'float'
-        lg_imu = LogConfig(name="Imu", period_in_ms=10)
-        lg_imu.add_variable(self._imu_names_struct.roll, float_type)
-        lg_imu.add_variable(self._imu_names_struct.pitch, float_type)
-        lg_imu.add_variable(self._imu_names_struct.yaw, float_type)
+        lg_imu = LogConfig(name="Imu", period_in_ms=20)
+        lg_imu.add_variable(self._imu_names_struct.gyro_x, float_type)
+        lg_imu.add_variable(self._imu_names_struct.gyro_y, float_type)
+        lg_imu.add_variable(self._imu_names_struct.gyro_z, float_type)
+
+        lg_imu.add_variable(self._imu_names_struct.acc_x, float_type)
+        lg_imu.add_variable(self._imu_names_struct.acc_y, float_type)
+        lg_imu.add_variable(self._imu_names_struct.acc_z, float_type)
 
         self._synced_cf.cf.log.add_config(lg_imu)
         lg_imu.data_received_cb.add_callback(self._log_imu_callback)
@@ -167,7 +196,6 @@ class BaseControlNode(Node):
             print("Error!: One or more Crazyflies can not be found. ")
             print("Check if you got the right URIs, if they are turned on" +
                                     " or if your script have proper access to a Crazyradio PA")
-
 
     def _fully_connected(self, link_uri: str):
         """

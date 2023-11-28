@@ -6,10 +6,10 @@
 Camera.type: "PinHole"
 
 # Camera calibration and distortion parameters (OpenCV) 
-Camera.fx: 301.01
-Camera.fy: 308.08
-Camera.cx: 161.03
-Camera.cy: 139.62
+Camera.fx: 593.89
+Camera.fy: 595.06
+Camera.cx: 326.15
+Camera.cy: 235.33
 
 Camera.k1: 0.0
 Camera.k2: 0.0
@@ -24,8 +24,8 @@ Camera.fps: 20.0
 Camera.RGB: 1
 
 # Camera resolution
-Camera.width: 320
-Camera.height: 240
+Camera.width: 640
+Camera.height: 480
 
 #--------------------------------------------------------------------------------------------
 # ORB Parameters
