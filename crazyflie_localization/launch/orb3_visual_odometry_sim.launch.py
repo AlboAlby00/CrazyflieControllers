@@ -53,7 +53,7 @@ def generate_launch_description():
         arguments=[vocabulary_path, camera_info_path],
         remappings=[('/camera', '/crazyflie/camera'),
                     ('/imu', '/crazyflie/imu'),
-                    ('/camera_pose', '/crazyflie/camera_pose')]
+                    ('/camera_position', '/crazyflie/camera_position')]
     )
 
     return LaunchDescription([

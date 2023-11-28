@@ -10,7 +10,7 @@ PositionPID::PositionPID() :
             std::bind(&PositionPID::_newPositionCommandCallback, this, std::placeholders::_1));
 
         _sub_gps = this->create_subscription<geometry_msgs::msg::PointStamped>(
-            "/crazyflie/gps",
+            "/crazyflie/camera_position",
             10,
             std::bind(&PositionPID::_newGpsCallback, this, std::placeholders::_1));
 
