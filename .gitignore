@@ -19,6 +19,6 @@ cmake-build-debug
 # potential local setup files
 build_vscode
 .vscode
-
+venv/
 # cache 
 cache/*
