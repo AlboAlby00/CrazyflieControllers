@@ -1,3 +1,4 @@
+#include <tf2/LinearMath/Matrix3x3.h>
 #include "crazyflie_controllers/position_pid_controller.h"
 
 PositionPID::PositionPID() : 
@@ -13,6 +14,10 @@ PositionPID::PositionPID() :
             "/crazyflie/gps",
             10,
             std::bind(&PositionPID::_newGpsCallback, this, std::placeholders::_1));
+        _sub_imu = this->create_subscription<sensor_msgs::msg::Imu>(
+            "/crazyflie/imu",
+            10,
+            std::bind(&PositionPID::_newImuCallback, this, std::placeholders::_1));
 
         _pub_attutude_cmd = this->create_publisher<crazyflie_msgs::msg::AttitudeCommand>(
             "/crazyflie/pid/attitude_controller",
@@ -43,6 +48,20 @@ void PositionPID::_newGpsCallback(const geometry_msgs::msg::PointStamped::Shared
 
 }
 
+void PositionPID::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data) {
+    tf2::Quaternion quaternion(
+            imu_data->orientation.x,
+            imu_data->orientation.y,
+            imu_data->orientation.z,
+            imu_data->orientation.w);
+
+    tf2::Matrix3x3 mat(quaternion);
+    mat.getRPY(_roll, _pitch, _yaw);
+    _body_orientation = mat;
+
+    RCLCPP_DEBUG(this->get_logger(), "imu data received! [r: %f, p: %f, y: %f]", _roll, _pitch, _yaw);
+}
+
 void PositionPID::_sendCommandAttitude()
 {
     rclcpp::Duration dt = now() - _old_time; 
@@ -51,11 +70,19 @@ void PositionPID::_sendCommandAttitude()
     double pid_y = _pid_y.getCommand(_y, _target_y, dt);
     double pid_z = _pid_z.getCommand(_z, _target_z, dt);
 
+
+    // first map a difference in x-, y-, z-direction direction to corresponding gains in attitude gains (and thrust)
+    tf2::Vector3 desired_action(pid_x, - pid_y, pid_z); // For the explanation of the - pid_y consult the Readme
+
+    // map the desired action to body frame of drone by using the inverse (the transpose for rotation matrices) of the
+    // body frame rotation matrix
+    tf2::Vector3 mapped_action = _body_orientation * desired_action;
+
     auto msg = std::make_unique<crazyflie_msgs::msg::AttitudeCommand>();
 
-    msg->pitch = pid_x;
-    msg->roll = - pid_y;
-    msg->thurst = pid_z;
+    msg->pitch = mapped_action.x();
+    msg->roll = mapped_action.y();
+    msg->thurst = mapped_action.z();
     msg->yaw = _yaw;
 
     _pub_attutude_cmd->publish(std::move(msg));

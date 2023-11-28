@@ -20,7 +20,7 @@ CircleArena {
 }
 ModifiedCrazyflie {
   translation 0 0 0.46319061419783847
-  rotation 0.0 0.0 0.0 0.0
+  rotation 0.0 0.0 1.0 1.57079632679
   controller "<extern>"
   name "crazyflie"
 }

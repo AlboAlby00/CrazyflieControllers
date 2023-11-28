@@ -9,14 +9,22 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include <tf2/transform_datatypes.h>
 #include <tf2/LinearMath/Matrix3x3.h>
+//#include <acado_toolkit.hpp>
+//#include <acado_gnuplot.hpp>
+//#include <acado_optimal_control.hpp>
+#include <acado/acado_toolkit.hpp>
+#include <acado/acado_gnuplot.hpp>
+#include <acado/acado_optimal_control.hpp>
+#include <acado/utils/acado_utils.hpp>
+using namespace ACADO;
 
 #include "crazyflie_controllers/control_utils/pid.h"
 
 constexpr int CONTROLLER_FREQ = 10;
 
-class PositionPID : public rclcpp::Node {
+class PositionMPC : public rclcpp::Node {
 public:
-    PositionPID();
+    PositionMPC();
 
 private:
     void _newPositionCommandCallback(const crazyflie_msgs::msg::PositionCommand::SharedPtr command);
@@ -42,10 +50,6 @@ private:
     double _target_x;
     double _target_y;
     double _target_z;
-
-    PID _pid_x;
-    PID _pid_y;
-    PID _pid_z;
 
     rclcpp::Time _old_time;
 };
