@@ -16,7 +16,6 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 
-
 include_directories(include)
 
 set(VO_DEPENDENCIES rclcpp sensor_msgs geometry_msgs cv_bridge visualization_msgs tf2 tf2_geometry_msgs)

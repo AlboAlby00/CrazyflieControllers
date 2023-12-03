@@ -2,7 +2,7 @@
 
 AttitudePID::AttitudePID()
     : Node("attitude_pid_controller"), _input_thrust(1.0), _target_roll(0.0), _target_pitch(0.0), _target_yaw(0.0),
-     _pid_roll(0, 0, 0), _pid_pitch(0.8, 0, 0), _pid_yaw(0, 0, 0)
+     _pid_roll(0.5, 0, 0.1), _pid_pitch(0.5, 0, 0.1), _pid_yaw(1.0, 0, 0.1)
 {
         _sub_new_position = this->create_subscription<crazyflie_msgs::msg::AttitudeCommand>(
             "/crazyflie/pid/attitude_controller",
@@ -61,8 +61,8 @@ void AttitudePID::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_dat
     tf2::Matrix3x3 mat(quaternion);
     mat.getRPY(_roll, _pitch, _yaw);
 
-    RCLCPP_INFO(this->get_logger(), "imu data received! [r: %f, p: %f, y: %f]", _roll, _pitch, _yaw);
-    RCLCPP_INFO(this->get_logger(), "p: %f", _pitch);
+    RCLCPP_DEBUG(this->get_logger(), "imu data received! [r: %f, p: %f, y: %f]", _roll, _pitch, _yaw);
+    RCLCPP_DEBUG(this->get_logger(), "p: %f", _pitch);
 }
 
 void AttitudePID::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data) {
@@ -78,16 +78,16 @@ void AttitudePID::_sendCmdMotor() {
     rclcpp::Duration dt = now() - _old_time; 
     
     double pid_roll     = _pid_roll.getCommand(_roll, _target_roll, dt);
-    double pid_pitch    = - _pid_pitch.getCommand(_pitch, _target_pitch, dt);
+    double pid_pitch    = _pid_pitch.getCommand(_pitch, _target_pitch, dt);
     double pid_yaw      = _pid_yaw.getCommand(_yaw, _target_yaw, dt);
 
     auto msg = std::make_unique<crazyflie_msgs::msg::MotorVel>();
     // RCLCPP_INFO(this->get_logger(), "data received thrust %f", _pitch );
     auto mapped_thrust = ((_input_thrust - 2.5) / 7.5) / 1.5;
-    msg->m1 = mapped_thrust - pid_roll - pid_pitch + pid_yaw; // GRAVITY_COMPENSATION + _input_thrust - pid_roll - pid_pitch + pid_yaw;
-    msg->m2 = mapped_thrust - pid_roll + pid_pitch - pid_yaw; // GRAVITY_COMPENSATION + _input_thrust - pid_roll + pid_pitch - pid_yaw;
-    msg->m3 = mapped_thrust + pid_roll + pid_pitch + pid_yaw; // GRAVITY_COMPENSATION + _input_thrust + pid_roll + pid_pitch + pid_yaw;
-    msg->m4 = mapped_thrust + pid_roll - pid_pitch - pid_yaw; // GRAVITY_COMPENSATION + _input_thrust + pid_roll - pid_pitch - pid_yaw;
+    msg->m1 = GRAVITY_COMPENSATION + _input_thrust - pid_roll - pid_pitch + pid_yaw;
+    msg->m2 = GRAVITY_COMPENSATION + _input_thrust - pid_roll + pid_pitch - pid_yaw;
+    msg->m3 = GRAVITY_COMPENSATION + _input_thrust + pid_roll + pid_pitch + pid_yaw;
+    msg->m4 = GRAVITY_COMPENSATION + _input_thrust + pid_roll - pid_pitch - pid_yaw;
     _pub_motor_vel->publish(std::move(msg));
 
     _old_time = now();

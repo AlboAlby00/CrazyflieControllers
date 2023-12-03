@@ -48,6 +48,12 @@ double PID::getCommand(const double value, const double target, const rclcpp::Du
         _prev_unfiltered_derivative = unfiltered_derivative;
     }
 
+    if(_debug)
+    {
+        std::cout << "error term: " << error_term << std::endl;
+        std::cout << "derivative: " << derivative << std::endl;
+    }
+
     double pid_D = _kd * std::clamp(derivative, -1.0, 1.0);
 
     double command = pid_P + pid_I + pid_D;
