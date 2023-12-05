@@ -8,7 +8,7 @@ Set up via
 colcon build
 ```
 
-### Dependencies for the Visual Odometry with ORBSLAM3
+### Dependencies for Visual Odometry with ORBSLAM3
 - build and install the original Orbslam3 and its dependency:
   https://github.com/UZ-SLAMLab/ORB_SLAM3
 - clone the ROS2 Orbslam3 wrapper on your ros2 workspace and follow the instructions on the Readme
