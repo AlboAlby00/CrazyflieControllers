@@ -2,7 +2,7 @@
 
 PositionPID::PositionPID() : 
     Node("attitude_pid_controller"), _input_yaw(0.0), _target_x(0.0), _target_y(0.0), _target_z(0.0),
-        _pid_x(0.01, 0, 0.04, true, 0.1), _pid_y(0.01, 0, 0.04, true, 0.1), _pid_z(8, 1 , 10, true, 0.1)
+        _pid_x(0.01, 0, 0.04, false, true, 0.1), _pid_y(0.01, 0, 0.04, false, true, 0.1), _pid_z(8, 1, 10, false, true, 0.1)
 {
         _sub_new_position = this->create_subscription<crazyflie_msgs::msg::PositionCommand>(
             "/crazyflie/pid/position_controller",
@@ -10,7 +10,7 @@ PositionPID::PositionPID() :
             std::bind(&PositionPID::_newPositionCommandCallback, this, std::placeholders::_1));
 
         _sub_gps = this->create_subscription<geometry_msgs::msg::PointStamped>(
-            "/crazyflie/gps",
+            "/crazyflie/camera_position",
             10,
             std::bind(&PositionPID::_newGpsCallback, this, std::placeholders::_1));
 
@@ -32,7 +32,7 @@ void PositionPID::_newPositionCommandCallback(const crazyflie_msgs::msg::Positio
     _target_y = command->y;
     _target_z = command->z;
     _yaw = command->yaw;
-    RCLCPP_INFO(this->get_logger(), "target updated, x: %f, y: %f, z= %f", _target_x, _target_y, _target_z);
+
 }
 
 void PositionPID::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data)
@@ -48,13 +48,13 @@ void PositionPID::_sendCommandAttitude()
     rclcpp::Duration dt = now() - _old_time; 
     
     double pid_x = _pid_x.getCommand(_x, _target_x, dt);
-    double pid_y = _pid_y.getCommand(_y, _target_y, dt);
+    double pid_y = - _pid_y.getCommand(_y, _target_y, dt);
     double pid_z = _pid_z.getCommand(_z, _target_z, dt);
 
     auto msg = std::make_unique<crazyflie_msgs::msg::AttitudeCommand>();
 
     msg->pitch = pid_x;
-    msg->roll = - pid_y;
+    msg->roll = pid_y;
     msg->thurst = pid_z;
     msg->yaw = _yaw;
 

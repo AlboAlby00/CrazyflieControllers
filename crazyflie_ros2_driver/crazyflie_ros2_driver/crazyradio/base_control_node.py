@@ -22,7 +22,6 @@ import time
 from cflib.crazyflie.log import LogConfig
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Quaternion
-from crazyflie_msgs.msg import EulerAngle
 from typing import List
 from cflib.crazyflie.log import LogVariable
 import math 
@@ -197,7 +196,6 @@ class BaseControlNode(Node):
             print("Error!: One or more Crazyflies can not be found. ")
             print("Check if you got the right URIs, if they are turned on" +
                                     " or if your script have proper access to a Crazyradio PA")
-
 
     def _fully_connected(self, link_uri: str):
         """

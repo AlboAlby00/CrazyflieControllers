@@ -20,5 +20,7 @@ cmake-build-debug
 build_vscode
 .vscode
 venv/
-# cache 
 cache/*
+
+crazyflie_localization/vocabulary/*
+
