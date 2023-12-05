@@ -8,6 +8,12 @@ Set up via
 colcon build
 ```
 
+### Dependencies for Visual Odometry with ORBSLAM3
+- build and install the original Orbslam3 and its dependency:
+  https://github.com/UZ-SLAMLab/ORB_SLAM3
+- clone the ROS2 Orbslam3 wrapper on your ros2 workspace and follow the instructions on the Readme
+  https://github.com/AlboAlby00/ORB_SLAM3_ROS2
+
 
 ## Start commands
 
@@ -62,6 +68,7 @@ https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/95a2af0e-7645
 
 thrust: 5.3681225 is the threshold thrust value which let's the drone just levitate from ground very slowly
 
+  
 
 ### Bug hunting
 
