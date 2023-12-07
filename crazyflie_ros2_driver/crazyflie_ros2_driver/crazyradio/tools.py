@@ -1,16 +1,21 @@
 import math
+from geometry_msgs.msg import Quaternion
 
-
-def convert_thrust(in_: float):
+def euler_to_quaternion(roll: float, pitch: float, yaw: float) -> Quaternion:
     """
-    - converts scalar from 2.5 to 10 to range of 10001 to 60000
-    - returns 0 if in_ is 0
-    - returns int
+    https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
     """
-    thrust_in = in_ if in_ <= 10 else 10
-    thrust_in = thrust_in - 2.5 if thrust_in > 2.5 else 0
-    thrust_in = 10001 + thrust_in * ((40500 - 10001) / (7.5)) if thrust_in != 0 else 0
-    return int(thrust_in)
+    c1 = math.cos(yaw   / 2)
+    c2 = math.cos(pitch / 2)
+    c3 = math.cos(roll  / 2)
+    s1 = math.sin(yaw   / 2)
+    s2 = math.sin(pitch / 2)
+    s3 = math.sin(roll  / 2)
 
-def radian_to_degree(in_: float):
-    return float((in_ / (math.pi)) * 360)
+    quaternion = Quaternion()
+    quaternion.w = c1 * c2 * c3 - s1 * s2 * s3
+    quaternion.x = s1 * s2 * c3 + c1 * c2 * s3
+    quaternion.y = s1 * c2 * c3 + c1 * s2 * s3
+    quaternion.z = c1 * s2 * c3 + s1 * c2 * s3
+    
+    return quaternion

@@ -1,32 +1,29 @@
 
-# Import required modules 
-import cv2 
-import numpy as np 
-import os 
-import glob 
+# Import required modules
+import cv2
+import numpy as np
+import os
+import glob
+
+# Define the dimensions of checkerboard
+CHECKERBOARD = (6, 9)
   
-  
-# Define the dimensions of checkerboard 
-CHECKERBOARD = (6, 8) 
-  
-# stop the iteration when specified 
-# accuracy, epsilon, is reached or 
-# specified number of iterations are completed. 
-criteria = (cv2.TERM_CRITERIA_EPS + 
+# stop the iteration when specified
+# accuracy, epsilon, is reached or
+# specified number of iterations are completed.
+criteria = (cv2.TERM_CRITERIA_EPS +
             cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001) 
-  
-  
-# Vector for 3D points 
-threedpoints = [] 
-  
-# Vector for 2D points 
-twodpoints = [] 
-  
-  
-#  3D points real world coordinates 
-objectp3d = np.zeros((1, CHECKERBOARD[0]  
-                      * CHECKERBOARD[1],  
-                      3), np.float32) 
+
+# Vector for 3D points
+threedpoints = []
+
+# Vector for 2D points
+twodpoints = []
+
+#  3D points real world coordinates
+objectp3d = np.zeros((1, CHECKERBOARD[0]
+                      * CHECKERBOARD[1],
+                      3), np.float32)
 objectp3d[0, :, :2] = np.mgrid[0:CHECKERBOARD[0], 
                                0:CHECKERBOARD[1]].T.reshape(-1, 2) 
 prev_img_shape = None
@@ -36,7 +33,7 @@ prev_img_shape = None
 # in a given directory. Since no path is 
 # specified, it will take current directory 
 # jpg files alone 
-images = glob.glob('/home/alboalby00/ros2_galactic_ws/src/deep_learning_in_robotics/crazyflie_ros2_driver/images/*.jpg') 
+images = glob.glob('/home/alboalby00/ros2_galactic_ws/src/deep_learning_in_robotics/crazyflie_ros2_driver/calibration_images/*.jpg') 
   
 for filename in images: 
     

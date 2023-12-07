@@ -1,8 +1,8 @@
 #include "crazyflie_controllers/attitude_pid_controller.h"
 
 AttitudePID::AttitudePID()
-    : Node("attitude_pid_controller"), _input_thrust(1.0), _target_roll(0.0), _target_pitch(0.0), _target_yaw(M_PI/2.0),
-     _pid_roll(0.5, 0, 0.1), _pid_pitch(0.5, 0, 0.1), _pid_yaw(1.0, 0, 0.5)
+    : Node("attitude_pid_controller"), _input_thrust(1.0), _target_roll(0.0), _target_pitch(0.0), _target_yaw(0.0),
+     _pid_roll(0.5, 0, 0.1), _pid_pitch(0.5, 0, 0.1), _pid_yaw(1.0, 0, 0.1)
 {
         _sub_new_position = this->create_subscription<crazyflie_msgs::msg::AttitudeCommand>(
             "/crazyflie/pid/attitude_controller",
@@ -15,7 +15,7 @@ AttitudePID::AttitudePID()
             std::bind(&AttitudePID::_newGpsCallback, this, std::placeholders::_1));
 
         _sub_imu = this->create_subscription<sensor_msgs::msg::Imu>(
-            "/crazyflie/imu",
+            "crazyflie/imu",
             10,
             std::bind(&AttitudePID::_newImuCallback, this, std::placeholders::_1));
 
@@ -27,8 +27,20 @@ AttitudePID::AttitudePID()
             std::chrono::milliseconds(1000 / CONTROLLER_FREQ),
             std::bind(&AttitudePID::_sendCmdMotor, this));
 
+
+        _sub_tuner = this->create_subscription<crazyflie_msgs::msg::PidTuner>(
+            "/crazyflie/pid_tuner",
+            10,
+            std::bind(&AttitudePID::_newPIDTunerCallback, this, std::placeholders::_1));
+
         _old_time = now();
     
+}
+
+void AttitudePID::_newPIDTunerCallback(const crazyflie_msgs::msg::PidTuner::SharedPtr pid_tune_data) {
+    this->_pid_pitch.update(pid_tune_data->pitch_kp, pid_tune_data->pitch_ki, pid_tune_data->pitch_kd);
+    this->_pid_roll.update(pid_tune_data->roll_kp, pid_tune_data->roll_ki, pid_tune_data->roll_kd);
+    this->_pid_yaw.update(pid_tune_data->yaw_kp, pid_tune_data->yaw_ki, pid_tune_data->yaw_kd);
 }
 
 void AttitudePID::_newCommandCallback(const crazyflie_msgs::msg::AttitudeCommand::SharedPtr command) {
@@ -50,6 +62,7 @@ void AttitudePID::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_dat
     mat.getRPY(_roll, _pitch, _yaw);
 
     RCLCPP_DEBUG(this->get_logger(), "imu data received! [r: %f, p: %f, y: %f]", _roll, _pitch, _yaw);
+    RCLCPP_DEBUG(this->get_logger(), "p: %f", _pitch);
 }
 
 void AttitudePID::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data) {
@@ -64,11 +77,13 @@ void AttitudePID::_sendCmdMotor() {
 
     rclcpp::Duration dt = now() - _old_time; 
     
-    double pid_roll = _pid_roll.getCommand(_roll, _target_roll, dt);
-    double pid_pitch = _pid_pitch.getCommand(_pitch, _target_pitch, dt);
-    double pid_yaw = _pid_yaw.getCommand(_yaw, _target_yaw, dt);
+    double pid_roll     = _pid_roll.getCommand(_roll, _target_roll, dt);
+    double pid_pitch    = _pid_pitch.getCommand(_pitch, _target_pitch, dt);
+    double pid_yaw      = _pid_yaw.getCommand(_yaw, _target_yaw, dt);
 
     auto msg = std::make_unique<crazyflie_msgs::msg::MotorVel>();
+    // RCLCPP_INFO(this->get_logger(), "data received thrust %f", _pitch );
+    auto mapped_thrust = ((_input_thrust - 2.5) / 7.5) / 1.5;
     msg->m1 = GRAVITY_COMPENSATION + _input_thrust - pid_roll - pid_pitch + pid_yaw;
     msg->m2 = GRAVITY_COMPENSATION + _input_thrust - pid_roll + pid_pitch - pid_yaw;
     msg->m3 = GRAVITY_COMPENSATION + _input_thrust + pid_roll + pid_pitch + pid_yaw;
