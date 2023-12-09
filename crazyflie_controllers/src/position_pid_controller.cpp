@@ -120,9 +120,9 @@ void PositionPID::_sendCommandAttitude()
 
     _old_time = now();
 
-    RCLCPP_INFO(this->get_logger(),
-                 "Sent out Commands! [pitch = pid_x: %f, roll = -pid_y: %f, thurst = pid_z: %f]",
-                 pid_x, -pid_y, pid_z);
+    /*RCLCPP_INFO(this->get_logger(),
+                 "Sent out Commands! [pitch = pid_x: %f, roll = -pid_y: %f, thrust = pid_z: %f]",
+                 pid_x, -pid_y, pid_z);*/
 }
 
 int main(int argc, char const *argv[])

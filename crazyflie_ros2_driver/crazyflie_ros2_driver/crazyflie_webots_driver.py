@@ -1,5 +1,4 @@
 import rclpy
-from controller import Camera
 from crazyflie_msgs.msg import MotorVel
 
 
@@ -26,8 +25,6 @@ class CrazyflieWebotsDriver:
 
         self.__m4_motor = self.__robot.getDevice("m4_motor")
         self.__m4_motor.setPosition(float('inf'))
-
-        camera : Camera = self.__robot.getDevice("camera")
 
         self.__target_motor_vel = MotorVel()
 

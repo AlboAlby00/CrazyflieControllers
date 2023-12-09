@@ -65,16 +65,16 @@ void PositionMPC::_sendCommandAttitude()
     rclcpp::Duration dt = now() - _old_time;
 
     // Constants
-    const double Ix = 0.0142;  // Moment of inertia around x-axis
-    const double Iy = 0.0142;  // Moment of inertia around y-axis
-    const double Iz = 0.0284;  // Moment of inertia around z-axis
+    const double Ix = 0.0142;  // Moment of inertia around p_WB_W_x-axis
+    const double Iy = 0.0142;  // Moment of inertia around p_WB_W_y-axis
+    const double Iz = 0.0284;  // Moment of inertia around p_WB_W_z-axis
     const double m = 1.56779;  // Mass of the quadrotor
     const double g = 9.81;     // Acceleration due to gravity
     const double samplingTime = 0.01; // Sampling time for real-time control
 
     // Initialize ACADO environment
-    DifferentialState x, y, z;         // Position
-    DifferentialState phi, theta, psi; // Orientation (roll, pitch, yaw)
+    DifferentialState p_WB_W_x, p_WB_W_y, p_WB_W_z;         // Position
+    DifferentialState R_WB_phi, R_WB_theta, R_WB_psi; // Orientation (roll, pitch, yaw)
     DifferentialState u, v, w;         // Body frame velocities
     DifferentialState p, q, r;         // Angular rates
 
@@ -84,10 +84,11 @@ void PositionMPC::_sendCommandAttitude()
     // Define the linearized dynamics of the quadrotor
     DifferentialEquation f;
 
+    /*
     // Angular rates dynamics
-    f << dot(phi) == p + r*theta;
-    f << dot(theta) == q - r*phi;
-    f << dot(psi) == r + q*phi;
+    f << dot(R_WB_phi) == p + r*R_WB_theta;
+    f << dot(R_WB_theta) == q - r*R_WB_phi;
+    f << dot(R_WB_psi) == r + q*R_WB_phi;
 
     // Angular accelerations dynamics
     f << dot(p) == (tau_x - (Iz - Iy)*r*q) / Ix;
@@ -95,20 +96,42 @@ void PositionMPC::_sendCommandAttitude()
     f << dot(r) == (tau_z - (Iy - Ix)*p*q) / Iz;
 
     // Linear accelerations dynamics
-    f << dot(u) == r*v - q*w - g*theta + ft/m;
-    f << dot(v) == p*w - r*u + g*phi;
+    f << dot(u) == r*v - q*w - g*R_WB_theta + ft/m;
+    f << dot(v) == p*w - r*u + g*R_WB_phi;
     f << dot(w) == q*u - p*v + g - ft/m;
 
     // Linear velocities dynamics
-    f << dot(x) == u;
-    f << dot(y) == v;
-    f << dot(z) == w;
+    f << dot(p_WB_W_x) == u;
+    f << dot(p_WB_W_y) == v;
+    f << dot(p_WB_W_z) == w;
+     */
+
+    // Angular rates dynamics
+    f << dot(R_WB_phi) == p;
+    f << dot(R_WB_theta) == q;
+    f << dot(R_WB_psi) == r;
+
+    // Angular accelerations dynamics
+    f << dot(p) == tau_x / Ix;
+    f << dot(q) == tau_y / Iy;
+    f << dot(r) == tau_z / Iz;
+
+    // Linear accelerations dynamics
+    f << dot(u) == -g * R_WB_theta;
+    f << dot(v) == g * R_WB_phi;
+    f << dot(w) == ft/m;
+
+    // Linear velocities dynamics
+    f << dot(p_WB_W_x) == u;
+    f << dot(p_WB_W_y) == v;
+    f << dot(p_WB_W_z) == w;
 
     // Set up the MPC optimization problem
-    OCP ocp(0.0, 2.0, (int)(2.0/samplingTime)); // Prediction horizon of 2 seconds, with sampling time intervals
+    // Prediction horizon of 2 seconds, with sampling time intervals
+    OCP ocp(0.0, 2.0, (int)(2.0/samplingTime));
 
     Function h;
-    h << x << y << z << phi << theta << psi << u << v << w << p << q << r;
+    h << p_WB_W_x << p_WB_W_y << p_WB_W_z << R_WB_phi << R_WB_theta << R_WB_psi << u << v << w << p << q << r;
     h << ft << tau_x << tau_y << tau_z;
 
     //DMatrix Q(h.getDim(), h.getDim());
@@ -119,7 +142,7 @@ void PositionMPC::_sendCommandAttitude()
     //DMatrix Q(dim, dim);
     //Q.setIdentity();
     /* uint dim = static_cast<uint>(h.getDim());
-    DMatrix Q(dim, dim); // Initializes a dim x dim matrix with zeros
+    DMatrix Q(dim, dim); // Initializes a dim p_WB_W_x dim matrix with zeros
 
     // Manually set the diagonal elements to 1 to create an identity matrix
     for (uint i = 0; i < dim; ++i) {
@@ -160,9 +183,9 @@ void PositionMPC::_sendCommandAttitude()
 
     // Add constraints for states and control inputs
     // Example constraints:
-    ocp.subjectTo(-10.0 <= x <= 10.0); // x position constraint
-    ocp.subjectTo(-10.0 <= y <= 10.0); // y position constraint
-    ocp.subjectTo(-10.0 <= z <= 10.0); // z position constraint
+    ocp.subjectTo(-10.0 <= p_WB_W_x <= 10.0); // p_WB_W_x position constraint
+    ocp.subjectTo(-10.0 <= p_WB_W_y <= 10.0); // p_WB_W_y position constraint
+    ocp.subjectTo(-10.0 <= p_WB_W_z <= 10.0); // p_WB_W_z position constraint
     // ... Add other constraints as necessary
 
     // Configure the solver for real-time optimization
@@ -172,11 +195,24 @@ void PositionMPC::_sendCommandAttitude()
     solver.set( QP_SOLVER, QP_QPOASES );
     solver.set( HOTSTART_QP, YES );
 
-    // Solve the MPC problem
+    /*// Solve the MPC problem
     if (solver.solve() != SUCCESSFUL_RETURN) {
         std::cerr << "MPC failed to solve" << std::endl;
         return -1;
-    }
+    }*/
+
+    // Define the initial state, parameters, and reference trajectory
+    //DVector X_MPC = (); // Initialize with the current state
+    //DVector _p = ...; // Initialize parameters if any
+    //VariablesGrid X_MPC_desired = (0,0,0,0,0,0,0,0,0,0,0); // Define the reference trajectory
+
+    /*
+    returnValue result = solver.solve(0.0, X_MPC, _p, _yRef);
+
+    if (result != SUCCESSFUL_RETURN) {
+        std::cerr << "MPC failed to solve" << std::endl;
+        return; // Make sure your function return type matches this action
+    }*/
 
     // Retrieve the control and state solution
     VariablesGrid state_trajectory, control_trajectory;
