@@ -26,6 +26,7 @@ from typing import List
 from cflib.crazyflie.log import LogVariable
 import math 
 
+
 def join_group_and_name(group, name):
     return group + "." + name
 
@@ -91,10 +92,9 @@ class ImuNames:
         self.gyro_y = self._join_(self._gyro_group, self._gyro_name_y)
         self.gyro_z = self._join_(self._gyro_group, self._gyro_name_z)
 
-
-
     def _join_(self, group: str, name: str):
         return group + "." + name
+
 class BaseControlNode(Node):
     """
     Requires child class to call _add_standard_callbacks 
@@ -139,7 +139,6 @@ class BaseControlNode(Node):
         pitch (θ): Pitch angle
         yaw (ψ): Yaw angle
         """
-
         # log_msg = '[%d][%s]: %s' % (timestamp, logconf.name, data)
         imu = Imu()
         imu.angular_velocity.x      = data[self._imu_names_struct.gyro_x]
@@ -151,27 +150,14 @@ class BaseControlNode(Node):
         imu.linear_acceleration.z   = data[self._imu_names_struct.acc_z]
 
         self.publisher.publish(imu)
-        # pitch_msg = '[%d][%s]: %s' % (timestamp, logconf.name, data[self._imu_names_struct.pitch])
-        # self.get_logger().info(pitch_msg)
-        # imu = Imu()
-        # imu.orientation = euler_to_quaternion(
-        #     roll=data[self._imu_names_struct.roll],
-        #     pitch=data[self._imu_names_struct.pitch],
-        #     yaw=data[self._imu_names_struct.yaw]
-        # )
-        # euler = EulerAngle()
-        # euler.roll = data[self._imu_names_struct.roll]
-        # euler.pitch = data[self._imu_names_struct.pitch]
-        # euler.yaw = data[self._imu_names_struct.yaw]
-        # self.publisher.publish(euler)
-        # self.publisher.publish(imu)
+
 
     def _publish_imu(self):
         """
         Publishes IMU data to a topic.
         """
         float_type = 'float'
-        lg_imu = LogConfig(name="Imu", period_in_ms=20)
+        lg_imu = LogConfig(name="Imu", period_in_ms=50)
         lg_imu.add_variable(self._imu_names_struct.gyro_x, float_type)
         lg_imu.add_variable(self._imu_names_struct.gyro_y, float_type)
         lg_imu.add_variable(self._imu_names_struct.gyro_z, float_type)
@@ -202,8 +188,8 @@ class BaseControlNode(Node):
         Called when connection to crazyflie is fully established
         """
         self._is_connected = True
-        # self.get_logger().debug("fully connected with " + link_uri)
         self._publish_variables()
+
         # initialize motor level control
         self._motor_control = MotorControl(self._synced_cf)
         
