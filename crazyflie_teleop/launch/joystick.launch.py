@@ -16,22 +16,15 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([get_package_share_directory(
             'teleop_twist_joy') + '/launch/teleop-launch.py']))
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     return LaunchDescription([
         joystick_to_attitude_node,
         joystick_node
-=======
-
-
-    return LaunchDescription([
-        joystick_to_attitude_node,
-        joystick_node
-
->>>>>>> 0d9b7e9efb5d1d9244a28c6c8e5649b79eaf1379
-=======
-    return LaunchDescription([
-        joystick_to_attitude_node,
-        joystick_node
->>>>>>> main
     ])
+
+    """
+    return LaunchDescription([
+        joystick_to_attitude_node,
+        joystick_node,
+        main
+    ])
+    """
