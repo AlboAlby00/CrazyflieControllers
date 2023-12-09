@@ -1,0 +1,26 @@
+#VRML_SIM R2022b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/floors/protos/CircleArena.proto"
+IMPORTABLE EXTERNPROTO "../resource/ModifiedCrazyflie.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.42105952726492635 -0.15093873607427358 0.8943860310021269 3.762111923278285
+  position 1.4919350320801785 1.201445305321089 2.208755547675918
+  follow "crazyflie"
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+CircleArena {
+}
+ModifiedCrazyflie {
+  translation 0 0 0.02
+  rotation 1.0 0.0 0.0 0.0
+  controller "<extern>"
+  name "crazyflie"
+}
