@@ -1,5 +1,1 @@
-sudo apt-get install ros-galactic-teleop-twist-joy
-sudo apt-get install ros-galactic-webots-ros2*
-sudo apt install ros-galactic-plotjuggler-ros
-
-pip install empy
+empy
