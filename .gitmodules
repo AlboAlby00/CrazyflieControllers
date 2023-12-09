@@ -1,0 +1,3 @@
+[submodule "3rd/ORB_SLAM3_ROS2"]
+	path = 3rd/ORB_SLAM3_ROS2
+	url = git@github.com:AlboAlby00/ORB_SLAM3_ROS2.git
