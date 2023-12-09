@@ -41,6 +41,13 @@ This will create an `install` folder. Make sure to source the install:
 $ source ./install/setup.bash
 ```
 
+Launch via 
+
+```s
+ros2 launch <crazyflie_<package_name>> <launch_script_name>
+```
+
+
 ### Visualization with plotjuggler
 
 To start plotjuggler, run
