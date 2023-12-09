@@ -1,6 +1,3 @@
-[submodule "3rd/acado"]
-	path = 3rd/acado
-	url = https://github.com/acado/acado.git
 [submodule "3rd/ACADOtoolkit"]
 	path = 3rd/ACADOtoolkit
 	url = https://github.com/acado/acado.git
