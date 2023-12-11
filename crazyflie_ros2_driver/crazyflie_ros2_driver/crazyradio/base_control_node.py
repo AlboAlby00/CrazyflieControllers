@@ -142,6 +142,9 @@ class BaseControlNode(Node):
 
         # log_msg = '[%d][%s]: %s' % (timestamp, logconf.name, data)
         imu = Imu()
+
+        imu.header.stamp = self.get_clock().now().to_msg()
+
         imu.angular_velocity.x      = data[self._imu_names_struct.gyro_x]
         imu.angular_velocity.y      = data[self._imu_names_struct.gyro_y]
         imu.angular_velocity.z      = data[self._imu_names_struct.gyro_z]
@@ -185,7 +188,8 @@ class BaseControlNode(Node):
         lg_imu.start()
 
     def _publish_variables(self):
-        self._publish_imu()
+        pass
+        # self._publish_imu()
 
     def _open_link(self):
         # +++ open link to crazyfly

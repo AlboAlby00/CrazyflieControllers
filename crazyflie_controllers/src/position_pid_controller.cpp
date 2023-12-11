@@ -1,7 +1,7 @@
 #include "crazyflie_controllers/position_pid_controller.h"
 
 PositionPID::PositionPID() : 
-    Node("attitude_pid_controller"), _input_yaw(0.0), _target_x(0.0), _target_y(0.0), _target_z(0.0),
+    Node("position_pid_controller"), _input_yaw(0.0), _target_x(0.0), _target_y(0.0), _target_z(0.0),
         _pid_x(0.01, 0, 0.04, false, true, 0.1), _pid_y(0.01, 0, 0.04, false, true, 0.1), _pid_z(8, 1, 10, false, true, 0.1)
 {
         _sub_new_position = this->create_subscription<crazyflie_msgs::msg::PositionCommand>(

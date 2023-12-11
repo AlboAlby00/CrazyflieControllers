@@ -66,8 +66,4 @@ def generate_launch_description():
         tf_broadcaster_node,
         joystick,
         attitude_controller
-<<<<<<< HEAD
     ])
-=======
-    ])
->>>>>>> 0d9b7e9efb5d1d9244a28c6c8e5649b79eaf1379

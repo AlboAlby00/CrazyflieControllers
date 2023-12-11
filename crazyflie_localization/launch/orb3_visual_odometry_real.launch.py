@@ -10,7 +10,6 @@ def generate_launch_description():
 
     localization_dir = get_package_share_directory('crazyflie_localization')
     orb3_dir = get_package_share_directory('orbslam3')
-    driver_dir = get_package_share_directory('crazyflie_ros2_driver')
 
     rviz_node = Node(
         package='rviz2',
@@ -31,8 +30,7 @@ def generate_launch_description():
         output='screen',
         arguments=[vocabulary_path, camera_info_path],
         remappings=[('/camera', '/crazyflie/camera'),
-                    ('/imu', '/crazyflie/imu'),
-                    ('/camera_pose', '/crazyflie/camera_pose')]
+                    ('/imu', '/crazyflie/imu')]
     )
 
     esp_32_driver = Node(
@@ -42,10 +40,6 @@ def generate_launch_description():
         arguments=['--ros-args', '--log-level', 'info'],
         remappings=[("esp_32/camera", "crazyflie/camera")]
     )
-
-    crazyflie_driver = IncludeLaunchDescription(
-        launch_description_source=PythonLaunchDescriptionSource([
-            driver_dir + '/launch/crazyflie_hw_driver.launch.py']))
 
     return LaunchDescription([
         rviz_node,

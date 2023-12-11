@@ -5,7 +5,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition
 from launch import LaunchDescription
-from ament_index_python import get_package_share_directory 
+from ament_index_python import get_package_share_directory
 
 
 def generate_launch_description():
@@ -38,17 +38,10 @@ def generate_launch_description():
                 'crazyflie_teleop') + '/launch/joystick.launch.py']),
         condition=IfCondition(LaunchConfiguration('use_joy')))
 
-    joystick_to_attitude = Node(
-        package='crazyflie_teleop',
-        executable='joystick_to_attitude',
-        output='screen',
-        condition=IfCondition(LaunchConfiguration('use_joy'))
-    )
 
     return LaunchDescription([
         use_joy_param,
         simulation,
         controller,
-        joystick_to_attitude,
         joystick_driver
     ])

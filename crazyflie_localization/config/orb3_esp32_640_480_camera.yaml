@@ -6,10 +6,10 @@
 Camera.type: "PinHole"
 
 # Camera calibration and distortion parameters (OpenCV) 
-Camera.fx: 593.89
-Camera.fy: 595.06
-Camera.cx: 326.15
-Camera.cy: 235.33
+Camera.fx: 594.48
+Camera.fy: 594.56
+Camera.cx: 341.62
+Camera.cy: 239.50
 
 Camera.k1: 0.0
 Camera.k2: 0.0
