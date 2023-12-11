@@ -29,7 +29,10 @@ def generate_launch_description():
     orbslam = IncludeLaunchDescription(
         launch_description_source=PythonLaunchDescriptionSource([
             localization_dir + '/launch/orb3_visual_odometry_sim.launch.py'
-        ])
+        ]),
+        launch_arguments=[
+            ('orb_mode', "mono")
+        ]
     )
 
     joystick = IncludeLaunchDescription(
@@ -53,7 +56,7 @@ def generate_launch_description():
         arguments=['--ros-args', '--log-level', 'info']
     )
 
-    rqt_gui = Node( 
+    rqt_gui = Node(
         package='rqt_gui',
         executable='rqt_gui',
         output='screen',

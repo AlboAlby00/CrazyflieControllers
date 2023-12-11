@@ -19,7 +19,10 @@ def generate_launch_description():
     orbslam = IncludeLaunchDescription(
         launch_description_source=PythonLaunchDescriptionSource([
             localization_dir + '/launch/orb3_visual_odometry_real.launch.py'
-        ])
+        ]),
+        launch_arguments=[
+            ('orb_mode', "mono")
+        ]
     )
 
     joystick = IncludeLaunchDescription(

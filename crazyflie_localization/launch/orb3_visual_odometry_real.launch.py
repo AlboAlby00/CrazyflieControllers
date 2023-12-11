@@ -1,15 +1,18 @@
 from launch import LaunchDescription
 from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 import os
+from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument
 
 
 def generate_launch_description():
 
     localization_dir = get_package_share_directory('crazyflie_localization')
     orb3_dir = get_package_share_directory('orbslam3')
+
+    conf_orb_mode = LaunchConfiguration("orb_mode", default="mono")
+
 
     rviz_node = Node(
         package='rviz2',
@@ -26,7 +29,7 @@ def generate_launch_description():
 
     orbslam3_odometry_node = Node(
         package='orbslam3',
-        executable='mono',
+        executable=conf_orb_mode,
         output='screen',
         arguments=[vocabulary_path, camera_info_path],
         remappings=[('/camera', '/crazyflie/camera'),
@@ -42,6 +45,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        DeclareLaunchArgument('orb_mode', default_value=conf_orb_mode, choices=['mono', 'mono-inertial']),
         rviz_node,
         orbslam3_odometry_node,
         esp_32_driver
