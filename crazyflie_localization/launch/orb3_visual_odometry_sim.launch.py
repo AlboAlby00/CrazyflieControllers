@@ -35,8 +35,17 @@ def generate_launch_description():
                     ('/imu', '/crazyflie/imu')]
     )
 
+    camera_aligner = Node(
+        package="crazyflie_localization",
+        executable="camera_aligner.py",
+        parameters=[{
+            "sim_camera": True
+        }]
+    )
+
     return LaunchDescription([
         DeclareLaunchArgument('orb_mode', default_value=conf_orb_mode, choices=['mono', 'mono-inertial']),
         rviz_node,
-        orbslam3_odometry_node
+        orbslam3_odometry_node,
+        camera_aligner
     ])

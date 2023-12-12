@@ -40,7 +40,7 @@ install(TARGETS visual_odometry_node tf_broadcaster_node
 ament_python_install_package(${PROJECT_NAME})
 # Install Python executables
 install(PROGRAMS
-  scripts/pose_from_imu.py
+  crazyflie_localization/camera_aligner.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
