@@ -12,7 +12,7 @@ def generate_launch_description():
     orb3_dir = get_package_share_directory('orbslam3')
 
     conf_orb_mode = LaunchConfiguration("orb_mode", default="mono")
-
+    esp_ip_conf = LaunchConfiguration("ip", default="192.168.45.169")
 
     rviz_node = Node(
         package='rviz2',
@@ -41,11 +41,15 @@ def generate_launch_description():
         executable="esp32_driver",
         output='screen',
         arguments=['--ros-args', '--log-level', 'info'],
-        remappings=[("esp_32/camera", "crazyflie/camera")]
+        remappings=[("esp_32/camera", "crazyflie/camera")],
+        parameters=[
+            {"ip": esp_ip_conf}
+        ]
     )
 
     return LaunchDescription([
         DeclareLaunchArgument('orb_mode', default_value=conf_orb_mode, choices=['mono', 'mono-inertial']),
+        DeclareLaunchArgument("ip", default_value=esp_ip_conf),
         rviz_node,
         orbslam3_odometry_node,
         esp_32_driver

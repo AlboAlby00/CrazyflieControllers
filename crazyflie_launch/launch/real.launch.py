@@ -15,13 +15,15 @@ def generate_launch_description():
     driver_dir = get_package_share_directory('crazyflie_ros2_driver')
 
     use_joy_conf = LaunchConfiguration("use_joy", default="false")
+    esp_ip_conf = LaunchConfiguration("ip", default="192.168.45.169")
 
     orbslam = IncludeLaunchDescription(
         launch_description_source=PythonLaunchDescriptionSource([
             localization_dir + '/launch/orb3_visual_odometry_real.launch.py'
         ]),
         launch_arguments=[
-            ('orb_mode', "mono")
+            ('orb_mode', "mono"),
+            ("ip", esp_ip_conf)
         ]
     )
 
@@ -54,6 +56,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         DeclareLaunchArgument('use_joy', default_value=use_joy_conf),
+        DeclareLaunchArgument("ip", default_value=esp_ip_conf),
         orbslam,
         hardware_driver,
         joystick,
