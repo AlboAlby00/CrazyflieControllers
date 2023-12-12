@@ -9,6 +9,7 @@ data_files.append(('share/' + package_name + '/launch', ['launch/crazyflie_webot
 data_files.append(('share/' + package_name + '/launch', ['launch/crazyflie_hw_driver.launch.py']))
 
 data_files.append(('share/' + package_name + '/worlds', ['worlds/crazyflie_arena.wbt']))
+data_files.append(('share/' + package_name + '/worlds', ['worlds/crazyflie_arena_daniel.wbt']))
 data_files.append(('share/' + package_name + '/worlds', ['worlds/complete_apartment.wbt']))
 data_files.append(('share/' + package_name + '/resource', ['resource/crazyflie.urdf']))
 data_files.append(('share/' + package_name + '/resource', ['resource/ModifiedCrazyflie.proto']))

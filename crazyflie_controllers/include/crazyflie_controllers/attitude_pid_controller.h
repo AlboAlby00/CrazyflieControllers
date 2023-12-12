@@ -13,7 +13,7 @@
 
 #include "crazyflie_controllers/control_utils/pid.h"
 
-constexpr double GRAVITY_COMPENSATION = 54.22; //55.3681225 is the threshold thrust value which lets the drone just levitate from ground very slowly
+constexpr double GRAVITY_COMPENSATION = 50; //54.22, 55.3681225 is the threshold thrust value which lets the drone just levitate from ground very slowly
 // 54.22 is the value which lets the drone stay on the ground at the beginning of the simulation bounce + 1.1487125 in thrust lets it levitate slowly,
 // but setting this to the comnbined value 54.22 + 1.1487125 = 55.3687125 let's it get off ground very fast at the beginning
 constexpr int CONTROLLER_FREQ = 30;
@@ -25,14 +25,16 @@ public:
 private:
     void _newCommandCallback(const crazyflie_msgs::msg::AttitudeCommand::SharedPtr command);
     void _newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data);
+    void _newPIDTunerCallback(const crazyflie_msgs::msg::PidTuner::SharedPtr pid_tune_data);
     void _newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data);
     void _sendCmdMotor();
 
     rclcpp::Subscription<crazyflie_msgs::msg::AttitudeCommand>::SharedPtr _sub_new_position;
     rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr _sub_gps;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr _sub_imu;
+    rclcpp::Subscription<crazyflie_msgs::msg::PidTuner>::SharedPtr _sub_tuner;
     rclcpp::Publisher<crazyflie_msgs::msg::MotorVel>::SharedPtr _pub_motor_vel;
-    rclcpp::TimerBase::SharedPtr _cmd_motor_timer;
+    rclcpp::TimerBase::SharedPtr _cmd_motor_timer; 
 
     double _x;
     double _y;

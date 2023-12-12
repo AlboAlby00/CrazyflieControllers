@@ -1,0 +1,6 @@
+visual_odometry_node:
+  ros__parameters:
+    fx: 301.01
+    fy: 308.08
+    cx: 161.03
+    cy: 139.62
