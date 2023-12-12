@@ -9,12 +9,14 @@ colcon build
 ```
 
 
-## Start commands
+## Start commands for controllers
 
 - launch the pid attitude controller:  `ros2 launch crazyflie_controllers attitude_pid_controller.launch.py`
 - launch the pid position controller:  `ros2 launch crazyflie_controllers position_pid_controller.launch.py` (it launches both attitude and position controller)
 - launch just drone with still-standing proppellers: `ros2 launch crazyflie_ros2_driver crazyflie_ros2_driver.launch.py`
 
+## Start commands for apriltag detection in apartment
+- `ros2 launch crazyflie_detectors sim_target_publisher.launch.py`
 
 ## Crazyflie 2.1
 
