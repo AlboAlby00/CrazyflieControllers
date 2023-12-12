@@ -17,16 +17,32 @@ def generate_launch_description():
         output='screen'
     )
 
+    attitude_controller = Node(
+        package='crazyflie_controllers',
+        executable='attitude_pid_controller',
+        output='screen',
+        arguments=['--ros-args', '--log-level', 'info']
+    )
+
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        #arguments=['-d', package_dir+"/config/camera.rviz"]
+    )
 
     simulation = IncludeLaunchDescription(launch_description_source=
         PythonLaunchDescriptionSource([get_package_share_directory(
-            'crazyflie_ros2_driver') + '/launch/crazyflie_ros2_driver.launch.py']),
+            'crazyflie_ros2_driver') + '/launch/crazyflie_webots_driver.launch.py']),
         launch_arguments={
-            'simulation_world': 'crazyflie_arena_atag.wbt',
+            'simulation_world': 'apriltag_apartment.wbt'
         }.items()
     )
 
     return LaunchDescription([
         simulation,
+        attitude_controller,
+        rviz_node,
         target_publisher
     ])

@@ -1,4 +1,4 @@
-#VRML_SIM R2023b utf8
+#VRML_SIM R2022b utf8
 
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
@@ -6,10 +6,11 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/project
 IMPORTABLE EXTERNPROTO "/home/m/ros2_galactic/src/CrazyflieControllers/crazyflie_ros2_driver/resource/ModifiedCrazyflie.proto"
 
 WorldInfo {
+  basicTimeStep 16
 }
 Viewpoint {
-  orientation 0.287755390602511 -0.37059875632508377 -0.8830930851215502 4.840719792973782
-  position -0.05739081242840304 -0.9812037826747158 1.1008393344279286
+  orientation -0.09553725915224753 -0.985995779969231 0.13669291860423535 5.049909240374355
+  position -0.7771684342478815 0.330126196260881 2.258017569189832
   follow "crazyflie"
 }
 TexturedBackground {
@@ -17,35 +18,27 @@ TexturedBackground {
 TexturedBackgroundLight {
 }
 CircleArena {
-  wallHeight 0.2
 }
 Solid {
-  translation 0.3 0.3 0.0001
+  translation 0 0.4 0.001
   children [
     Shape {
-      appearance PBRAppearance {
-        baseColorMap ImageTexture {
+      appearance Appearance {
+        texture ImageTexture {
           url [
             "apriltag2.png"
           ]
-          filtering 0
         }
-        metalness 0
-        IBLStrength 0
-        normalMapFactor 0
-        occlusionMapStrength 0
-        emissiveIntensity 0
       }
       geometry Plane {
         size 0.05 0.05
       }
     }
   ]
-  physics Physics {
-  }
 }
 ModifiedCrazyflie {
   translation 0 0 0.46319061419783847
+  rotation 0 0 1 1.57079632679
   name "crazyflie"
   controller "<extern>"
 }
