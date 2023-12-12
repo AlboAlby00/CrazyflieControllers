@@ -1,0 +1,44 @@
+#VRML_SIM R2022b utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/floors/protos/CircleArena.proto"
+IMPORTABLE EXTERNPROTO "/home/m/ros2_galactic/src/CrazyflieControllers/crazyflie_ros2_driver/resource/ModifiedCrazyflie.proto"
+
+WorldInfo {
+  basicTimeStep 16
+}
+Viewpoint {
+  orientation -0.09553725915224753 -0.985995779969231 0.13669291860423535 5.049909240374355
+  position -0.7771684342478815 0.330126196260881 2.258017569189832
+  follow "crazyflie"
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+CircleArena {
+}
+Solid {
+  translation 0 0.4 0.001
+  children [
+    Shape {
+      appearance Appearance {
+        texture ImageTexture {
+          url [
+            "apriltag2.png"
+          ]
+        }
+      }
+      geometry Plane {
+        size 0.05 0.05
+      }
+    }
+  ]
+}
+ModifiedCrazyflie {
+  translation 0 0 0.46319061419783847
+  rotation 0 0 1 1.57079632679
+  name "crazyflie"
+  controller "<extern>"
+}

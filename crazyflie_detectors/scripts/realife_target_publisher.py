@@ -52,7 +52,7 @@ class ApriltagDetector(Node):
             image, 
             estimate_tag_pose=True, 
             camera_params=self.camera_params, 
-            tag_size=0.19
+            tag_size=0.1
         )
         if len(detections) > 0:
             tag_pos = detections[0].pose_t

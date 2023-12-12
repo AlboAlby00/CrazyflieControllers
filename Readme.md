@@ -16,9 +16,22 @@ $ git submodule update --init --recursive
 3. Install the dependencies listed in [apt_dependencies](./apt_dependencies.txt)
 4. Install pip requirements
 
-```s
-$ pip install -r requirements.txt
-```
+## Start commands for controllers
+
+- launch the pid attitude controller:  `ros2 launch crazyflie_controllers attitude_pid_controller.launch.py`
+- launch the pid position controller:  `ros2 launch crazyflie_controllers position_pid_controller.launch.py` (it launches both attitude and position controller)
+- launch just drone with still-standing proppellers: `ros2 launch crazyflie_ros2_driver crazyflie_ros2_driver.launch.py`
+
+## Start commands for apriltag detection in apartment
+- `ros2 launch crazyflie_detectors sim_target_publisher.launch.py`
+
+## Crazyflie 2.1
+
+
+### motor numbers and spinning orientation
+
+#### m1 - clockwise
+![m1](https://github.com/AlboAlby00/CrazyflieControllers/assets/23526716/6d818960-ba34-4e41-8b84-6226d07ec23c)
 
 ### Dependencies for Visual Odometry with ORBSLAM3
 
