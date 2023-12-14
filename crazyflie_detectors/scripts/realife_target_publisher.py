@@ -17,7 +17,7 @@ class ApriltagDetector(Node):
         self.rotation_publisher = self.create_publisher(PoseStamped, 'crazyflie/at_rotation', 10)
         self.camera_sub = self.create_subscription(Image, 'esp_32/camera', self.camera_callback, 10)
         self.publish_translation_timer = self.create_timer(0.01, self.publish_translation)
-        self.publish_rotation_timer = self.create_timer(0.01, self.publish_rotation)
+        # self.publish_rotation_timer = self.create_timer(0.01, self.publish_rotation)
 
         self.camera_params = (
             594.48, # fx

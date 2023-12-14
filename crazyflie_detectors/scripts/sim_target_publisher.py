@@ -12,10 +12,10 @@ from cv_bridge import CvBridge
 class ApriltagDetector(Node):
     def __init__(self):
         super().__init__('crazyflie_detectors')
-        self.publisher = self.create_publisher(PointStamped, 'crazyflie/at', 10)
+        self.translation_publisher = self.create_publisher(PointStamped, 'crazyflie/at_translation', 10)
         self.get_logger().info("apriltag detector running")
         self.camera_sub = self.create_subscription(Image, 'crazyflie/camera', self.camera_callback, 10)
-        self.publish_timer = self.create_timer(0.01, self.publish_target)
+        self.publish_timer = self.create_timer(0.01, self.publish_translation)
 
         self.camera_params = (
             348.62, # fx
@@ -67,17 +67,16 @@ class ApriltagDetector(Node):
         self.rotation = rotation
 
 
-    def publish_target(self):
+    def publish_translation(self):
         msg = PointStamped()
         # concat translation and flattened rotation
-        # msg = self.translation.flatten().tolist() + self.rotation.flatten().tolist()
         msg.point.x = self.translation[0]
         msg.point.y = self.translation[1]
         msg.point.z = self.translation[2]
         msg.header.stamp = self.get_clock().now().to_msg()
 
-        self.publisher.publish(msg)
-        self.get_logger().info('Publishing Apriltag here: "%s' % msg)
+        self.translation_publisher.publish(msg)
+        self.get_logger().info('Publishing Apriltag translation here: "%s' % msg)
     
 
 def main(args=None):
