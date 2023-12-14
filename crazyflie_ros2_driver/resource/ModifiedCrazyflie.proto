@@ -92,6 +92,7 @@ PROTO ModifiedCrazyflie [
       Accelerometer {
       }
       InertialUnit {
+        name "imu"
       }
       DEF M1 Propeller {
         shaftAxis 0 0 1

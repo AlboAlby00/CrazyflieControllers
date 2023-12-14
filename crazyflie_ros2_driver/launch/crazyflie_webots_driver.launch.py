@@ -14,10 +14,10 @@ def generate_launch_description():
     package_dir = get_package_share_directory('crazyflie_ros2_driver')
     robot_description = pathlib.Path(os.path.join(package_dir, 'resource', 'crazyflie.urdf')).read_text()
 
-    simulation_world_arg = DeclareLaunchArgument('simulation_world', default_value='crazyflie_arena_daniel.wbt')
+    simulation_world_arg = DeclareLaunchArgument('world', default_value='complete_apartment.wbt')
 
     webots = WebotsLauncher(
-        world = PathJoinSubstitution([package_dir,"worlds",LaunchConfiguration("simulation_world")])
+        world = PathJoinSubstitution([package_dir,"worlds",LaunchConfiguration("world")])
     )
 
     ros2_supervisor = Ros2SupervisorLauncher()

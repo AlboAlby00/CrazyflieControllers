@@ -1,16 +1,18 @@
 from launch import LaunchDescription
 from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 import os
+from launch.substitutions import LaunchConfiguration
+from launch.actions import DeclareLaunchArgument
 
 
 def generate_launch_description():
 
     localization_dir = get_package_share_directory('crazyflie_localization')
     orb3_dir = get_package_share_directory('orbslam3')
-    driver_dir = get_package_share_directory('crazyflie_ros2_driver')
+
+    conf_orb_mode = LaunchConfiguration("orb_mode", default="mono")
+    esp_ip_conf = LaunchConfiguration("ip", default="192.168.45.169")
 
     rviz_node = Node(
         package='rviz2',
@@ -27,12 +29,11 @@ def generate_launch_description():
 
     orbslam3_odometry_node = Node(
         package='orbslam3',
-        executable='mono',
+        executable=conf_orb_mode,
         output='screen',
         arguments=[vocabulary_path, camera_info_path],
         remappings=[('/camera', '/crazyflie/camera'),
-                    ('/imu', '/crazyflie/imu'),
-                    ('/camera_pose', '/crazyflie/camera_pose')]
+                    ('/imu', '/crazyflie/imu')]
     )
 
     esp_32_driver = Node(
@@ -40,15 +41,25 @@ def generate_launch_description():
         executable="esp32_driver",
         output='screen',
         arguments=['--ros-args', '--log-level', 'info'],
-        remappings=[("esp_32/camera", "crazyflie/camera")]
+        remappings=[("esp_32/camera", "crazyflie/camera")],
+        parameters=[
+            {"ip": esp_ip_conf}
+        ]
     )
 
-    crazyflie_driver = IncludeLaunchDescription(
-        launch_description_source=PythonLaunchDescriptionSource([
-            driver_dir + '/launch/crazyflie_hw_driver.launch.py']))
+    camera_aligner = Node(
+        package="crazyflie_localization",
+        executable="camera_aligner.py",
+        parameters=[{
+            "sim_camera": False
+        }]
+    )
 
     return LaunchDescription([
+        DeclareLaunchArgument('orb_mode', default_value=conf_orb_mode, choices=['mono', 'mono-inertial']),
+        DeclareLaunchArgument("ip", default_value=esp_ip_conf),
         rviz_node,
         orbslam3_odometry_node,
-        esp_32_driver
+        esp_32_driver,
+        camera_aligner
     ])

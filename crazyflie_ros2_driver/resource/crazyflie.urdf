@@ -7,7 +7,7 @@
             <topicName>/crazyflie/imu</topicName>
             <alwaysOn>true</alwaysOn>
             <frameName>imu_link</frameName>
-            <inertialUnitName>inertial unit</inertialUnitName>
+            <inertialUnitName>imu</inertialUnitName>
             <gyroName>gyro</gyroName>
             <accelerometerName>accelerometer</accelerometerName>
         </plugin>

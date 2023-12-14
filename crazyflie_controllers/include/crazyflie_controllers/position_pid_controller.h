@@ -21,12 +21,12 @@ public:
 
 private:
     void _newPositionCommandCallback(const crazyflie_msgs::msg::PositionCommand::SharedPtr command);
-    void _newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data);
+    void _newStateCallback(const geometry_msgs::msg::PointStamped::SharedPtr state_data);
     void _newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data);
     void _sendCommandAttitude();
 
     rclcpp::Subscription<crazyflie_msgs::msg::PositionCommand>::SharedPtr _sub_new_position;
-    rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr _sub_gps;
+    rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr _sub_state;
     rclcpp::Publisher<crazyflie_msgs::msg::AttitudeCommand>::SharedPtr _pub_attutude_cmd;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr _sub_imu;
     rclcpp::TimerBase::SharedPtr _attitude_cmd_timer;
@@ -50,7 +50,9 @@ private:
     //tf2::Transform X_BW; // Transformation from the body frame of the drone to the world frame
 
     double _yaw; // The yaw we directly input and give to the atitude controller
-
+    double _target_x;
+    double _target_y;
+    double _target_z;
 
     PID _pid_x;
     PID _pid_y;

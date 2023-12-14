@@ -7,7 +7,7 @@ from geometry_msgs.msg import Twist
 from crazyflie_msgs.msg import AttitudeCommand
 
 class CmdVelToAttitudeConverter(Node):
-    
+
     def __init__(self) -> None:
         super().__init__('cmd_vel_to_attitude')
         self._cmd_vel_sub =  self._sub_new_position = self.create_subscription(
@@ -19,7 +19,7 @@ class CmdVelToAttitudeConverter(Node):
         self._yaw = 0
         self._thurst = 1
         self.get_logger().info("cmd_vel_to_attitude node is running!")
-        
+
     def _new_cmd_vel_callback(self, cmd_vel : Twist):
 
         self._pitch += self.deg_to_radiants(cmd_vel.linear.x)
@@ -39,7 +39,7 @@ class CmdVelToAttitudeConverter(Node):
         self._attitude_command_pub.publish(attitude_command)
 
         return True
-    
+
     def deg_to_radiants(self, angle):
         return angle * 2 * 3.14 / 360
 

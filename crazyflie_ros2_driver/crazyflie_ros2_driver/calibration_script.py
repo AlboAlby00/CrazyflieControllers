@@ -6,13 +6,13 @@ import os
 import glob
 
 # Define the dimensions of checkerboard
-CHECKERBOARD = (6, 9)
+CHECKERBOARD = (7, 10)
   
 # stop the iteration when specified
 # accuracy, epsilon, is reached or
 # specified number of iterations are completed.
 criteria = (cv2.TERM_CRITERIA_EPS +
-            cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001) 
+            cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
 # Vector for 3D points
 threedpoints = []
