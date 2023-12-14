@@ -17,11 +17,11 @@ public:
 
 private:
     void _newPositionCommandCallback(const crazyflie_msgs::msg::PositionCommand::SharedPtr command);
-    void _newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data);
+    void _newStateCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data);
     void _sendCommandAttitude();
 
     rclcpp::Subscription<crazyflie_msgs::msg::PositionCommand>::SharedPtr _sub_new_position;
-    rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr _sub_gps;
+    rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr _sub_state;
     rclcpp::Publisher<crazyflie_msgs::msg::AttitudeCommand>::SharedPtr _pub_attutude_cmd;
     rclcpp::TimerBase::SharedPtr _attitude_cmd_timer;
 

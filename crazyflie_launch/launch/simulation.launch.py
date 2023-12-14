@@ -5,7 +5,7 @@ from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument
-from launch.conditions import IfCondition, UnlessCondition
+from launch.conditions import IfCondition, UnlessCondition, LaunchConfigurationEquals
 
 
 def generate_launch_description():
@@ -16,13 +16,15 @@ def generate_launch_description():
 
     world_conf = LaunchConfiguration("world", default="complete_apartment.wbt")
     use_joy_conf = LaunchConfiguration("use_joy", default="false")
+    state_est_conf = LaunchConfiguration("state_est", default="camera")
+    orb_mode_conf = LaunchConfiguration("orb_mode", default="mono")
 
     simulation = IncludeLaunchDescription(
         launch_description_source=PythonLaunchDescriptionSource([
             driver_dir + '/launch/crazyflie_webots_driver.launch.py'
         ]),
         launch_arguments=[
-            ('simulation_world', LaunchConfiguration('world'))
+            ('simulation_world', world_conf)
         ]
     )
 
@@ -30,8 +32,9 @@ def generate_launch_description():
         launch_description_source=PythonLaunchDescriptionSource([
             localization_dir + '/launch/orb3_visual_odometry_sim.launch.py'
         ]),
+        condition=LaunchConfigurationEquals('state_est', 'camera'),
         launch_arguments=[
-            ('orb_mode', "mono")
+            ('orb_mode', orb_mode_conf),
         ]
     )
 
@@ -46,6 +49,7 @@ def generate_launch_description():
         executable='position_pid_controller',
         output='screen',
         arguments=['--ros-args', '--log-level', 'info'],
+        parameters=[{'state_est': state_est_conf}],
         condition=UnlessCondition(LaunchConfiguration('use_joy'))
     )
 
@@ -66,6 +70,8 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('world', default_value=world_conf),
         DeclareLaunchArgument('use_joy', default_value=use_joy_conf),
+        DeclareLaunchArgument('state_est', default_value=state_est_conf, choices=["camera", "gps"]),
+        DeclareLaunchArgument('orb_mode', default_value=orb_mode_conf, choices=["mono", "mono-inertial"]),
         simulation,
         orbslam,
         joystick,
