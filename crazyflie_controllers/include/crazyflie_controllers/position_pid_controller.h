@@ -50,9 +50,6 @@ private:
     //tf2::Transform X_BW; // Transformation from the body frame of the drone to the world frame
 
     double _yaw; // The yaw we directly input and give to the atitude controller
-    double _target_x;
-    double _target_y;
-    double _target_z;
 
     PID _pid_x;
     PID _pid_y;

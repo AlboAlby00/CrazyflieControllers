@@ -2,7 +2,7 @@
 #include "crazyflie_controllers/position_pid_controller.h"
 
 PositionPID::PositionPID() : 
-    Node("position_pid_controller"), _yaw(0.0), _target_x(0.0), _target_y(0.0), _target_z(0.0),
+    Node("position_pid_controller"), _yaw(0.0), 
         _pid_x(0.01, 0, 0.04, false, true, 0.1), _pid_y(0.01, 0, 0.04, false, true, 0.1), _pid_z(8, 1, 10, false, true, 0.1)
 {
         this->declare_parameter("state_est", "camera");
@@ -24,6 +24,11 @@ PositionPID::PositionPID() :
             "/crazyflie/pid/attitude_controller",
             10);
 
+        _sub_imu = this->create_subscription<sensor_msgs::msg::Imu>(
+            "/crazyflie/imu",
+            10,
+            std::bind(&PositionPID::_newImuCallback, this, std::placeholders::_1));
+
         _attitude_cmd_timer = this->create_wall_timer(
             std::chrono::milliseconds(1000 / CONTROLLER_FREQ),
             std::bind(&PositionPID::_sendCommandAttitude, this));
@@ -34,6 +39,8 @@ PositionPID::PositionPID() :
 
 void PositionPID::_newPositionCommandCallback(const crazyflie_msgs::msg::PositionCommand::SharedPtr command)
 {
+    _yaw = command->yaw;
+
     // Vector (expressed in body frame B) going from frame B to a desired position D, also p_BD_B
     p_WD_W = tf2::Vector3(command->x, command->y, command->z);
 
@@ -48,9 +55,6 @@ void PositionPID::_newPositionCommandCallback(const crazyflie_msgs::msg::Positio
     p_BD_B = R_BW * p_BD_W;
 
     // Step 4: Set the target positions in the drone's local coordinate system.
-    _target_x = p_BD_B.x();
-    _target_y = p_BD_B.y();
-    _target_z = p_BD_B.z();
     
     RCLCPP_DEBUG(this->get_logger(),
                 "target updated, p_BD_B.x(): %f, p_BD_B.y(): %f, p_BD_B.z() = %f",
@@ -71,8 +75,6 @@ void PositionPID::_newStateCallback(const geometry_msgs::msg::PointStamped::Shar
     // Then we use this vector for the position control of the drone for correct PID gains calculation.
     // We have to update p_BD_B, because p_WD_W changes over time. This is done in the GpsCallback
     p_BD_B = R_BW * p_BD_W;
-
-
 
     RCLCPP_DEBUG(this->get_logger(),
                  "GPS updated, p_WB.x: %f, p_WB.y(): %f, p_WB.z = %f", p_WB_W.x(), p_WB_W.y(), p_WB_W.z());
