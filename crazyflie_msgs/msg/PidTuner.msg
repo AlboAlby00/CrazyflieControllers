@@ -10,3 +10,6 @@ float32 pitch_kd
 float32 yaw_kp
 float32 yaw_ki
 float32 yaw_kd
+float32 z_kp
+float32 z_ki
+float32 z_kd

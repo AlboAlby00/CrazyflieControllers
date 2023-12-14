@@ -12,10 +12,11 @@ def generate_launch_description():
 
     localization_dir = get_package_share_directory('crazyflie_localization')
     controllers_dir = get_package_share_directory('crazyflie_controllers')
+    teleop_dir = get_package_share_directory('crazyflie_teleop')
     driver_dir = get_package_share_directory('crazyflie_ros2_driver')
 
     use_joy_conf = LaunchConfiguration("use_joy", default="false")
-    esp_ip_conf = LaunchConfiguration("ip", default="192.168.45.169")
+    esp_ip_conf = LaunchConfiguration("ip", default="192.168.178.84")
 
     orbslam = IncludeLaunchDescription(
         launch_description_source=PythonLaunchDescriptionSource([
@@ -29,7 +30,7 @@ def generate_launch_description():
 
     joystick = IncludeLaunchDescription(
         launch_description_source=PythonLaunchDescriptionSource([
-            controllers_dir + '/launch/joystick.launch.py']),
+            teleop_dir + '/launch/joystick.launch.py']),
         condition=IfCondition(LaunchConfiguration('use_joy'))
     )
 
@@ -43,8 +44,7 @@ def generate_launch_description():
         package='crazyflie_controllers',
         executable='position_pid_controller',
         output='screen',
-        arguments=['--ros-args', '--log-level', 'info'],
-        condition=UnlessCondition(LaunchConfiguration('use_joy'))
+        arguments=['--ros-args', '--log-level', 'info']
     )
 
     rqt_gui = Node( 

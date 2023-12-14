@@ -62,17 +62,17 @@ void PositionPID::_sendCommandAttitude()
 {
     rclcpp::Duration dt = now() - _old_time; 
     
-    //double pid_x = _pid_x.getCommand(_x, _target_x, dt);
-    //double pid_y = - _pid_y.getCommand(_y, _target_y, dt);
-    //double pid_z = _pid_z.getCommand(_z, _target_z, dt);
-    double pid_z = _pid_z.getCommand(-_x, _target_z, dt);
+    double pid_x = _pid_x.getCommand(_x, _target_x, dt);
+    double pid_y = - _pid_y.getCommand(_y, _target_y, dt);
+    double pid_z = _pid_z.getCommand(_z, _target_z, dt);
+    // double pid_z = _pid_z.getCommand(-_x, _target_z, dt);
 
     auto msg = std::make_unique<crazyflie_msgs::msg::AttitudeCommand>();
-    RCLCPP_INFO(this->get_logger(), "Current z: %f, target z: %f, thrust: %f", -_x, _target_z, pid_z);
-    msg->pitch = 0;// pid_x;
-    msg->roll = 0;// pid_y;
+    RCLCPP_INFO(this->get_logger(), "Current z: %f, target z: %f, thrust: %f", _z, _target_z, pid_z);
+    msg->pitch = pid_x;
+    msg->roll = pid_y;
     msg->thurst = pid_z;
-    msg->yaw = 0;// _yaw;
+    msg->yaw = _yaw;
 
     _pub_attutude_cmd->publish(std::move(msg));
 
