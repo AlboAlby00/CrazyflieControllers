@@ -1,6 +1,7 @@
+#! /usr/bin/env python3.8
+
 import rclpy
 from crazyflie_msgs.msg import MotorVel
-
 
 class CrazyflieWebotsDriver:
 
@@ -25,6 +26,10 @@ class CrazyflieWebotsDriver:
 
         self.__m4_motor = self.__robot.getDevice("m4_motor")
         self.__m4_motor.setPosition(float('inf'))
+
+        self.__imu = self.__robot.getDevice("imu")
+        self.__imu.enable(100)
+        self.__node.get_logger().warning("imu rate : " + str(self.__imu.getSamplingPeriod()))
 
         self.__target_motor_vel = MotorVel()
 

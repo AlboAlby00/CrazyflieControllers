@@ -32,7 +32,7 @@ def generate_launch_description():
         launch_description_source=PythonLaunchDescriptionSource([
             localization_dir + '/launch/orb3_visual_odometry_sim.launch.py'
         ]),
-        condition=LaunchConfigurationEquals('state_est', 'camera'),
+        # condition=LaunchConfigurationEquals('state_est', 'camera'),
         launch_arguments=[
             ('orb_mode', orb_mode_conf),
         ]
