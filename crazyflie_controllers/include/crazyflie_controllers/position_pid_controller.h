@@ -6,6 +6,7 @@
 #include "crazyflie_msgs/msg/position_command.hpp"
 #include "crazyflie_msgs/msg/attitude_command.hpp"
 #include "geometry_msgs/msg/point_stamped.hpp"
+#include "crazyflie_msgs/msg/pid_tuner.hpp"
 
 #include "crazyflie_controllers/control_utils/pid.h"
 
@@ -18,12 +19,14 @@ public:
 private:
     void _newPositionCommandCallback(const crazyflie_msgs::msg::PositionCommand::SharedPtr command);
     void _newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data);
+    void _newPIDTunerCallback(const crazyflie_msgs::msg::PidTuner::SharedPtr pid_tune_data);
     void _sendCommandAttitude();
 
     rclcpp::Subscription<crazyflie_msgs::msg::PositionCommand>::SharedPtr _sub_new_position;
     rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr _sub_gps;
     rclcpp::Publisher<crazyflie_msgs::msg::AttitudeCommand>::SharedPtr _pub_attutude_cmd;
     rclcpp::TimerBase::SharedPtr _attitude_cmd_timer;
+    rclcpp::Subscription<crazyflie_msgs::msg::PidTuner>::SharedPtr _sub_tuner;
 
     double _x;
     double _y;
