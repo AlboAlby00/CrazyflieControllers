@@ -82,7 +82,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/bathroom/protos/Toilet.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/lights/protos/CeilingSpotLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2022b/projects/objects/trees/protos/Cypress.proto"
-IMPORTABLE EXTERNPROTO "../resource/ModifiedCrazyflie.proto"
+IMPORTABLE EXTERNPROTO "/home/m/ros2_galactic/src/CrazyflieControllers/crazyflie_ros2_driver/resource/ModifiedCrazyflie.proto"
 
 WorldInfo {
   info [
@@ -92,8 +92,8 @@ WorldInfo {
   basicTimeStep 16
 }
 Viewpoint {
-  orientation 0.4866848496687021 0.03434126104162654 -0.8729023627491358 3.1532339950763912
-  position 9.571161096288096 -6.8399261946204 29.377766065426087
+  orientation -0.1068343269118343 0.8261498455833406 -0.5532294815317762 0.354935752024299
+  position -2.6187192899997993 -1.210402583186041 0.5425497643927343
   exposure 0.5
   ambientOcclusionRadius 1
 }
@@ -726,6 +726,25 @@ DEF KITCHEN_BLOCK Transform {
       size 0.7 2.43 0.06
     }
   ]
+}
+Solid {
+  translation -1 -1.2 0.1
+  rotation 0 1 0 -1.5
+  children [
+    Shape {
+      appearance Appearance {
+        texture ImageTexture {
+          url [
+            "apriltag.png"
+          ]
+        }
+      }
+      geometry Plane {
+        size 0.1 0.1
+      }
+    }
+  ]
+  name "apriltag"
 }
 StraightStairs {
   translation -4.32594 -5.824913 0
@@ -2065,8 +2084,7 @@ DEF TREES Transform {
 }
 ModifiedCrazyflie {
   translation -1.65 -1.26 0.05
-  rotation 0.0 0.0 0.0 0.0
-  controller "<extern>"
+  rotation 0 1 0 0
   name "crazyflie"
+  controller "<extern>"
 }
-
