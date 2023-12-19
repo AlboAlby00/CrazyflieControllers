@@ -146,15 +146,16 @@ void PositionMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_dat
 
 void PositionMPC::_sendCommandAttitude()
 {
+    USING_NAMESPACE_ACADO
     rclcpp::Duration dt = now() - _prev_time;
 
     // Constants
-    const double Ix = 0.0142;  // Moment of inertia around p_WB_W_x_df-axis
-    const double Iy = 0.0142;  // Moment of inertia around p_WB_W_y_df-axis
-    const double Iz = 0.0284;  // Moment of inertia around p_WB_W_z_df-axis
-    const double m = 1.56779;  // Mass of the quadrotor
+    const double Ix = 0.0000166;  // Moment of inertia around p_WB_W_x-axis, source: Julian Förster's ETH Bachelor Thesis
+    const double Iy = 0.0000167;  // Moment of inertia around p_WB_W_y-axis, source: Julian Förster's ETH Bachelor Thesis
+    const double Iz = 0.00000293;  // Moment of inertia around p_WB_W_z-axis, source: Julian Förster's ETH Bachelor Thesis
+    const double m = 0.029;  // Mass of the quadrotor, source: Julian Förster's ETH Bachelor Thesis
     const double g = 9.81;     // Acceleration due to gravity
-    const double samplingTime = 0.01; // Sampling time for real-time control
+    const double samplingTime = 0.1; // Sampling time for real-time control
 
     // Initialize ACADO environment
     DifferentialState R_WB_roll_df, R_WB_pitch_df, R_WB_yaw_df; // Orientation (roll, pitch, yaw)
@@ -169,27 +170,6 @@ void PositionMPC::_sendCommandAttitude()
     // Define the linearized dynamics of the quadrotor
     DifferentialEquation f;
 
-    /*
-    // Angular rates dynamics
-    f << dot(R_WB_roll_df) == omega_WB_roll_df + omega_WB_yaw_df*R_WB_pitch_df;
-    f << dot(R_WB_pitch_df) == omega_WB_pitch_df - omega_WB_yaw_df*R_WB_roll_df;
-    f << dot(R_WB_yaw_df) == omega_WB_yaw_df + omega_WB_pitch_df*R_WB_roll_df;
-
-    // Angular accelerations dynamics
-    f << dot(omega_WB_roll_df) == (tau_x_df - (Iz - Iy)*omega_WB_yaw_df*omega_WB_pitch_df) / Ix;
-    f << dot(omega_WB_pitch_df) == (tau_y_df - (Ix - Iz)*omega_WB_yaw_df*omega_WB_roll_df) / Iy;
-    f << dot(omega_WB_yaw_df) == (tau_z_df - (Iy - Ix)*omega_WB_roll_df*omega_WB_pitch_df) / Iz;
-
-    // Linear accelerations dynamics
-    f << dot(v_WB_x_df) == omega_WB_yaw_df*v_WB_y_df - omega_WB_pitch_df*v_WB_z_df - g*R_WB_pitch_df + ft_df/m;
-    f << dot(v_WB_y_df) == omega_WB_roll_df*v_WB_z_df - omega_WB_yaw_df*v_WB_x_df + g*R_WB_roll_df;
-    f << dot(v_WB_z_df) == omega_WB_pitch_df*v_WB_x_df - omega_WB_roll_df*v_WB_y_df + g - ft_df/m;
-
-    // Linear velocities dynamics
-    f << dot(p_WB_W_x_df) == v_WB_x_df;
-    f << dot(p_WB_W_y_df) == v_WB_y_df;
-    f << dot(p_WB_W_z_df) == v_WB_z_df;
-     */
 
     // Angular rates dynamics
     f << dot(R_WB_roll_df) == omega_WB_roll_df;
@@ -211,44 +191,14 @@ void PositionMPC::_sendCommandAttitude()
     f << dot(p_WB_W_y_df) == v_WB_y_df;
     f << dot(p_WB_W_z_df) == v_WB_z_df;
 
-    // Set up the MPC optimization problem
-    // Prediction horizon of 2 seconds, with sampling time intervals
-    OCP ocp(0.0, 2.0, (int)(2.0/samplingTime));
+
 
     Function h;
     h << p_WB_W_x_df << p_WB_W_y_df << p_WB_W_z_df << R_WB_roll_df << R_WB_pitch_df << R_WB_yaw_df << v_WB_x_df << v_WB_y_df << v_WB_z_df << omega_WB_roll_df << omega_WB_pitch_df << omega_WB_yaw_df;
     h << ft_df << tau_x_df << tau_y_df << tau_z_df;
 
-    //DMatrix Q(h.getDim(), h.getDim());
-    //Q.eye(); // Simple identity matrix for weighting
-    //const int dim = h.getDim();
-    //uint dim = static_cast<uint>(h.getDim());
-    //DMatrix Q(dim, dim);
-    //DMatrix Q(dim, dim);
-    //Q.setIdentity();
-    /* uint dim = static_cast<uint>(h.getDim());
-    DMatrix Q(dim, dim); // Initializes a dim p_WB_W_x_df dim matrix with zeros
 
-    // Manually set the diagonal elements to 1 to create an identity matrix
-    for (uint i = 0; i < dim; ++i) {
-        Q(i, i) = 1.0;
-    } */
 
-    /*std::vector<std::vector<double>> matrixData = {
-            {1.0, 2.0},
-            {3.0, 4.0}
-    };
-
-    unsigned numRows = 2;
-    unsigned numCols = 2;
-    DMatrix Q(numRows, numCols, matrixData);*/
-
-    //std::vector<std::vector<double>> matrixData = {
-    //        {1.0, 2.0},
-    //        {3.0, 4.0}
-    //};
-
-    //unsigned dim = 2;
 
 
     //DMatrix Q(dim, dim, matrixData);
@@ -260,33 +210,37 @@ void PositionMPC::_sendCommandAttitude()
     }
     DMatrix Q(dim, dim, identityData);
 
+    // Set up the MPC optimization problem
+    // Prediction horizon of 1 second, with sampling time intervals
+    OCP ocp(0.0, 1.0, 20);
 
-    ocp.minimizeLSQ(Q, h);
+    DVector r(16);
+    r.setZero(); // Set all values to zero initially
+    r(11) = 1.0; // Set the desired z-coordinate to 1.0
+
+
+    ocp.minimizeLSQ(Q, h, r);
 
     // Subject to the differential equation
     ocp.subjectTo(f);
 
     // Add constraints for states and control inputs
     // Example constraints:
-    ocp.subjectTo(-10.0 <= p_WB_W_x_df <= 10.0); // p_WB_W_x_df position constraint
-    ocp.subjectTo(-10.0 <= p_WB_W_y_df <= 10.0); // p_WB_W_y_df position constraint
-    ocp.subjectTo(-10.0 <= p_WB_W_z_df <= 10.0); // p_WB_W_z_df position constraint
+    //ocp.subjectTo(-10.0 <= p_WB_W_x_df <= 10.0); // p_WB_W_x_df position constraint
+    //ocp.subjectTo(-10.0 <= p_WB_W_y_df <= 10.0); // p_WB_W_y_df position constraint
+    //ocp.subjectTo(-10.0 <= p_WB_W_z_df <= 10.0); // p_WB_W_z_df position constraint
     // ... Add other constraints as necessary
 
-    // Configure the solver for real-time optimization
-    RealTimeAlgorithm solver(ocp, samplingTime);
-    solver.set( MAX_NUM_ITERATIONS, 1 );
-    solver.set( KKT_TOLERANCE, 1e-3 );
-    solver.set( QP_SOLVER, QP_QPOASES );
-    solver.set( HOTSTART_QP, YES );
 
-    /*// Solve the MPC problem
-    if (solver.solve() != SUCCESSFUL_RETURN) {
-        std::cerr << "MPC failed to solve" << std::endl;
-        return -1;
-    }*/
+    // Configure the alg for real-time optimization
+    RealTimeAlgorithm alg(ocp, samplingTime);
+    alg.set( MAX_NUM_ITERATIONS, 1 );
+    //alg.set( KKT_TOLERANCE, 1e-3 );
+    //alg.set( QP_SOLVER, QP_QPOASES );
+    //alg.set( HOTSTART_QP, YES );
 
-    // Define the initial state, parameters, and reference trajectory
+
+    // Define the current state to be the current values
     DVector X_MPC(12);
 
     double R_WB_roll, R_WB_pitch, R_WB_yaw;
@@ -309,34 +263,18 @@ void PositionMPC::_sendCommandAttitude()
     DVector _p; // Initialize parameters if any
     //VariablesGrid X_MPC_desired_trajectory = (0,0,0,0,0,0,0,0,0,0,0); // Define the reference trajectory
 
-    // 12 state variables and 1 grid point, our target state
-    VariablesGrid X_MPC_desired_trajectory(12, Grid(0.0, 2.0, 1));
-    X_MPC_desired_trajectory(0, 0) = 0.0; // Target roll
-    X_MPC_desired_trajectory(0, 1) = 0.0; // Target pitch
-    X_MPC_desired_trajectory(0, 2) = 0.0; // Target yaw (changeable)
-    X_MPC_desired_trajectory(0, 3) = 0.0; // Target angular roll velocity
-    X_MPC_desired_trajectory(0, 4) = 0.0; // Target angular pitch velocity
-    X_MPC_desired_trajectory(0, 5) = 0.0; // Target angular yaw velocity
-    X_MPC_desired_trajectory(0, 6) = 0.0; // Target velocity in x-coordinate
-    X_MPC_desired_trajectory(0, 7) = 0.0; // Target velocity in y-coordinate
-    X_MPC_desired_trajectory(0, 8) = 0.0; // Target velocity in z-coordinate
-    X_MPC_desired_trajectory(0, 9) = 0.0; // Target x-coordinate
-    X_MPC_desired_trajectory(0, 10) = 0.0; // Target y-coordinate
-    X_MPC_desired_trajectory(0, 11) = 1.0; // Target z-coordinate (1 meter height) hard-coded for now
+    //alg.init();
+    //if (alg.solve(0, X_MPC) != SUCCESSFUL_RETURN) {
+    //    std::cerr << "Solver failed!" << std::endl;
+        // Handle solver failure
+    //}
 
-
-    /*
-    returnValue result = solver.solve(0.0, X_MPC, _p, _yRef);
-
-    if (result != SUCCESSFUL_RETURN) {
-        std::cerr << "MPC failed to solve" << std::endl;
-        return; // Make sure your function return type matches this action
-    }*/
+    Controller controller( alg, r );
 
     // Retrieve the control and state solution
     VariablesGrid state_trajectory, control_trajectory;
-    solver.getDifferentialStates(state_trajectory);
-    solver.getControls(control_trajectory);
+    alg.getDifferentialStates(state_trajectory);
+    alg.getControls(control_trajectory);
 
 
     auto msg = std::make_unique<crazyflie_msgs::msg::AttitudeCommand>();
@@ -355,6 +293,7 @@ void PositionMPC::_sendCommandAttitude()
     _pub_attutude_cmd->publish(std::move(msg));
 
     _prev_time = now();
+
 }
 
 int main(int argc, char const *argv[])
