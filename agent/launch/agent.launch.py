@@ -10,9 +10,9 @@ from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
 
-    target_publisher = Node(
+    agent = Node(
         package='crazyflie_detectors',
-        executable='sim_target_publisher.py',
+        executable='agent.py',
         output='screen'
     )
 
@@ -35,5 +35,5 @@ def generate_launch_description():
     return LaunchDescription([
         simulation,
         rviz_node,
-        target_publisher
+        agent
     ])

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(crazyflie_detectors)
+project(agent)
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
@@ -36,8 +36,7 @@ install(
 
 install(
   PROGRAMS
-  scripts/sim_target_publisher.py
-  scripts/realife_target_publisher.py
+  scripts/agent.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

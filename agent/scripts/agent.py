@@ -2,28 +2,52 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
-from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import Image
+from crazyflie_msgs.msg import MotorVel
 import dt_apriltags as apriltag
 import cv2
 import numpy as np
 from cv_bridge import CvBridge
 
 
+class TestController(Node):
+    
+    def __init__(self):
+        super().__init__('test_controller')
+        self._cmd_motor_vel_pub = self.create_publisher(MotorVel, 'crazyflie/cmd_motor_vel', 10)
+        self._first_time = True
+
+        timer_period = 2  
+        self._timer = self.create_timer(timer_period, self.timer_callback)
+
+    def timer_callback(self):
+        if self._first_time:
+            propeller_vel = 500.0
+            self.get_logger().info('Publishing cmd_motor_vel for the first time')
+            self._first_time = False
+        else:
+            propeller_vel = 53.0
+        
+        msg = MotorVel()
+        msg.m1 =   propeller_vel
+        msg.m2 =   propeller_vel
+        msg.m3 =   propeller_vel
+        msg.m4 =   propeller_vel
+        self._cmd_motor_vel_pub.publish(msg)
+        
 class ApriltagDetector(Node):
     def __init__(self):
         super().__init__('crazyflie_detectors')
         self.translation_publisher = self.create_publisher(PointStamped, 'crazyflie/at_translation', 10)
-        self.rotation_publisher = self.create_publisher(PoseStamped, 'crazyflie/at_rotation', 10)
-        self.camera_sub = self.create_subscription(Image, 'esp_32/camera', self.camera_callback, 10)
-        self.publish_translation_timer = self.create_timer(0.01, self.publish_translation)
-        # self.publish_rotation_timer = self.create_timer(0.01, self.publish_rotation)
+        self.get_logger().info("apriltag detector running")
+        self.camera_sub = self.create_subscription(Image, 'crazyflie/camera', self.camera_callback, 10)
+        self.publish_timer = self.create_timer(0.01, self.publish_translation)
 
         self.camera_params = (
-            594.48, # fx
-            594.56, # fy
-            341.62, # cx
-            239.50, # cy
+            348.62, # fx
+            348.62, # fy
+            162.0, # cx
+            162.0, # cy
         )
 
         self.detector = apriltag.Detector(
@@ -32,8 +56,8 @@ class ApriltagDetector(Node):
             quad_decimate=1.0,
             quad_sigma=0.0,
             refine_edges=1,
-            decode_sharpening=0.25,
-            debug=0
+            decode_sharpening=0.5,
+            debug=1
         )
 
         self.translation = np.zeros(3)
@@ -48,7 +72,6 @@ class ApriltagDetector(Node):
         image = self.bridge.imgmsg_to_cv2(image_msg, desired_encoding='passthrough')
         # convert to grayscale
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
         detections = self.detector.detect(
             image, 
             estimate_tag_pose=True, 
@@ -72,27 +95,14 @@ class ApriltagDetector(Node):
 
     def publish_translation(self):
         msg = PointStamped()
+        # concat translation and flattened rotation
         msg.point.x = self.translation[0]
         msg.point.y = self.translation[1]
         msg.point.z = self.translation[2]
         msg.header.stamp = self.get_clock().now().to_msg()
 
-        self.publisher.publish(msg)
-        self.get_logger().info('Publishing translation: "%s"' % msg)
-    
-    def publish_rotation(self):
-        msg = PoseStamped()
-        msg.pose.position.x = self.translation[0]
-        msg.pose.position.y = self.translation[1]
-        msg.pose.position.z = self.translation[2]
-        msg.pose.orientation.x = self.rotation[0][0]
-        msg.pose.orientation.y = self.rotation[1][0]
-        msg.pose.orientation.z = self.rotation[2][0]
-        msg.pose.orientation.w = self.rotation[0][1]
-        msg.header.stamp = self.get_clock().now().to_msg()
-
-        self.publisher.publish(msg)
-        self.get_logger().info('Publishing rotation: "%s"' % msg)
+        self.translation_publisher.publish(msg)
+        self.get_logger().info('Publishing Apriltag translation here: "%s' % msg)
     
 
 def main(args=None):
