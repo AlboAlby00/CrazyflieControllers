@@ -16,20 +16,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    position_controller = Node(
-        package='crazyflie_controllers',
-        executable='position_pid_controller',
-        output='screen',
-        arguments=['--ros-args', '--log-level', 'info']
-    )
-
-    attitude_controller = Node(
-        package='crazyflie_controllers',
-        executable='attitude_pid_controller',
-        output='screen',
-        arguments=['--ros-args', '--log-level', 'info']
-    )
-
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
@@ -48,8 +34,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         simulation,
-        attitude_controller,
-        position_controller,
         rviz_node,
         target_publisher
     ])
