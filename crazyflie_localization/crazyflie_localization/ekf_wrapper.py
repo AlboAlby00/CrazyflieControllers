@@ -33,12 +33,12 @@ class EkfWrapper(Node):
         new_msg.pose.pose.position.x = msg.point.x
         new_msg.pose.pose.position.y = msg.point.y
         new_msg.pose.pose.position.z = msg.point.z
-        new_msg.pose.covariance = [0.000001, 0.0,    0.0,    0.0,    0.0,    0.0,
-                                   0.0,    0.000001, 0.0,    0.0,    0.0,    0.0,
-                                   0.0,    0.0,    0.000001, 0.0,    0.0,    0.0,
-                                   0.0,    0.0,    0.0,    0.1,    0.0,    0.0,
-                                   0.0,    0.0,    0.0,    0.0,    0.1,    0.0,
-                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.1
+        new_msg.pose.covariance = [1e-4,   0.0,      0.0,    0.0,    0.0,    0.0,
+                                   0.0,    1e-4,     0.0,    0.0,    0.0,    0.0,
+                                   0.0,    0.0,      1e-4,   0.0,    0.0,    0.0,
+                                   0.0,    0.0,      0.0,    1e-4,    0.0,    0.0,
+                                   0.0,    0.0,      0.0,    0.0,    1e-4,    0.0,
+                                   0.0,    0.0,      0.0,    0.0,    0.0,    1e-4
                                    ]
         self.pub_camera_pos.publish(new_msg)
 
@@ -53,12 +53,12 @@ class EkfWrapper(Node):
         new_msg.orientation_covariance = [0.01, 0.0, 0.0,
                                           0.0, 0.01, 0.0,
                                           0.0, 0.0, 0.01]
-        new_msg.angular_velocity_covariance = [0.001, 0.0, 0.0,
-                                               0.0, 0.001, 0.0,
-                                               0.0, 0.0, 0.001]
-        new_msg.linear_acceleration_covariance = [0.001, 0.0, 0.0,
-                                                  0.0, 0.001, 0.0,
-                                                  0.0, 0.0, 0.001]
+        new_msg.angular_velocity_covariance = [0.01, 0.0, 0.0,
+                                               0.0, 0.01, 0.0,
+                                               0.0, 0.0, 0.01]
+        new_msg.linear_acceleration_covariance = [0.01, 0.0, 0.0,
+                                                  0.0, 0.01, 0.0,
+                                                  0.0, 0.0, 0.01]
         self.pub_imu_with_covariance.publish(new_msg)
 
     def publish_filtered_position(self, msg: PointStamped):
