@@ -31,6 +31,10 @@ private:
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr _sub_imu;
     rclcpp::TimerBase::SharedPtr _attitude_cmd_timer;
 
+    rclcpp::CallbackGroup::SharedPtr _position_command_callback_group;
+    rclcpp::CallbackGroup::SharedPtr _gps_callback_group;
+    rclcpp::CallbackGroup::SharedPtr _imu_callback_group;
+
     tf2::Matrix3x3 R_WB; // Rotation going from world frame W to the body frame B, cannot name it _R_WB
     tf2::Matrix3x3 R_BW; // Rotation going from body frame B to the world frame W
 

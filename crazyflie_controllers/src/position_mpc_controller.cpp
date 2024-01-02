@@ -11,38 +11,66 @@ using namespace std;
 PositionMPC::PositionMPC() :
     Node("position_mpc_controller")
 {
-        _sub_new_position = this->create_subscription<crazyflie_msgs::msg::PositionCommand>(
+    _position_command_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    _gps_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    _imu_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
+    rclcpp::SubscriptionOptions position_callback_group_options;
+    position_callback_group_options.callback_group = _position_command_callback_group;
+    rclcpp::SubscriptionOptions gps_callback_group_options;
+    gps_callback_group_options.callback_group = _gps_callback_group;
+    rclcpp::SubscriptionOptions imu_callback_group_options;
+    imu_callback_group_options.callback_group = _imu_callback_group;
+
+    _sub_new_position = this->create_subscription<crazyflie_msgs::msg::PositionCommand>(
+            "/crazyflie/mpc/position_controller", 10,
+            std::bind(&PositionMPC::_newPositionCommandCallback, this, std::placeholders::_1),
+            position_callback_group_options);
+
+    _sub_gps = this->create_subscription<geometry_msgs::msg::PointStamped>(
+            "/crazyflie/gps", 10,
+            std::bind(&PositionMPC::_newGpsCallback, this, std::placeholders::_1),
+            gps_callback_group_options);
+
+    _sub_imu = this->create_subscription<sensor_msgs::msg::Imu>(
+            "/crazyflie/imu", 10,
+            std::bind(&PositionMPC::_newImuCallback, this, std::placeholders::_1),
+            imu_callback_group_options);
+
+
+    _sub_new_position = this->create_subscription<crazyflie_msgs::msg::PositionCommand>(
             "/crazyflie/mpc/position_controller",
             10,
             std::bind(&PositionMPC::_newPositionCommandCallback, this, std::placeholders::_1));
 
-        _sub_gps = this->create_subscription<geometry_msgs::msg::PointStamped>(
-            "/crazyflie/gps",
-            10,
-            std::bind(&PositionMPC::_newGpsCallback, this, std::placeholders::_1));
-        _sub_imu = this->create_subscription<sensor_msgs::msg::Imu>(
-            "/crazyflie/imu",
-            10,
-            std::bind(&PositionMPC::_newImuCallback, this, std::placeholders::_1));
+    _sub_gps = this->create_subscription<geometry_msgs::msg::PointStamped>(
+        "/crazyflie/gps",
+        10,
+        std::bind(&PositionMPC::_newGpsCallback, this, std::placeholders::_1));
 
-        _pub_attutude_cmd = this->create_publisher<crazyflie_msgs::msg::AttitudeCommand>(
-            "/crazyflie/pid/attitude_controller",
-            10);
+    _sub_imu = this->create_subscription<sensor_msgs::msg::Imu>(
+        "/crazyflie/imu",
+        10,
+        std::bind(&PositionMPC::_newImuCallback, this, std::placeholders::_1));
 
-        _attitude_cmd_timer = this->create_wall_timer(
-            std::chrono::milliseconds(1000 / CONTROLLER_FREQ),
-            std::bind(&PositionMPC::_sendCommandAttitude, this));
+    _pub_attutude_cmd = this->create_publisher<crazyflie_msgs::msg::AttitudeCommand>(
+        "/crazyflie/pid/attitude_controller",
+        10);
 
-        _prev_time = now();
-        _is_prev_time_position_set = false;
+    _attitude_cmd_timer = this->create_wall_timer(
+        std::chrono::milliseconds(1000 / CONTROLLER_FREQ),
+        std::bind(&PositionMPC::_sendCommandAttitude, this));
 
-        v_WB = tf2::Vector3(0.0, 0.0, 0.0);
-        omega_WB = tf2::Vector3(0.0, 0.0, 0.0);
-        p_WB_W = tf2::Vector3(0.0, 0.0, 0.0);
-        R_WB.setIdentity();
-        _desiredControlSetByCallback = false;
+    _prev_time = now();
+    _is_prev_time_position_set = false;
 
-        InitializeMPC();
+    v_WB = tf2::Vector3(0.0, 0.0, 0.0);
+    omega_WB = tf2::Vector3(0.0, 0.0, 0.0);
+    p_WB_W = tf2::Vector3(0.0, 0.0, 0.0);
+    R_WB.setIdentity();
+    _desiredControlSetByCallback = false;
+
+    InitializeMPC();
   
 }
 
