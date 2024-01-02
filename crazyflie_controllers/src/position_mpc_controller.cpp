@@ -1,4 +1,12 @@
 #include "crazyflie_controllers/position_mpc_controller.h"
+#include <iostream>
+#include <Eigen/Dense>
+
+#include "crazyflie_controllers/control_utils/ModelPredictiveController.h"
+
+using namespace Eigen;
+using namespace std;
+
 
 PositionMPC::PositionMPC() :
     Node("position_mpc_controller")
@@ -27,6 +35,14 @@ PositionMPC::PositionMPC() :
 
         _prev_time = now();
         _is_prev_time_position_set = false;
+
+        v_WB = tf2::Vector3(0.0, 0.0, 0.0);
+        omega_WB = tf2::Vector3(0.0, 0.0, 0.0);
+        p_WB_W = tf2::Vector3(0.0, 0.0, 0.0);
+        R_WB.setIdentity();
+        _desiredControlSetByCallback = false;
+
+        InitializeMPC();
   
 }
 
@@ -66,6 +82,36 @@ void PositionMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::Positio
     RCLCPP_INFO(this->get_logger(),
                 "target updated, p_BD_B.x(): %f, p_BD_B.y(): %f, p_BD_B.z() = %f",
                 p_BD_B.x(), p_BD_B.y(), p_BD_B.z());
+
+    double roll, pitch, yaw;
+    R_WB.getRPY(roll, pitch, yaw);
+
+    MatrixXd desiredControlTrajectoryTotalInput;
+
+    MatrixXd desiredTrajectory_instance;
+    //                            Cc.rows() = 6 for Rotation (3D) and Position (3D) observation
+    desiredTrajectory_instance.resize(6 ,1);
+    //              assuming that the world Coordinate system is perfectly leveled
+    //                                       Rotation,                        Position
+    //                            R_WD_roll, R_WD_pitch, R_WD_yaw, p_WD_W_x,   p_WD_W_y,   p_WD_W_z
+    desiredTrajectory_instance << 0,         0,          0,        command->x, command->y, command->z;
+
+
+    MatrixXd desiredTrajectory;
+    desiredTrajectory.resize(_timeSteps * desiredTrajectory_instance.rows(), 1);
+
+
+    for (unsigned int t = 0; t < _timeSteps; ++t){
+        for (unsigned int r = 0; r < desiredTrajectory_instance.rows(); ++r){
+            desiredTrajectory.row(t * desiredTrajectory_instance.rows() + r) = desiredTrajectory_instance.row(r);
+        }
+
+    }
+
+    cout << "desiredControlTrajectory before_mpc.setDesiredControlTrajectoryTotal(desiredTrajectory);:  \n" << desiredTrajectory << endl;
+    _mpc.setDesiredControlTrajectoryTotal(desiredTrajectory);
+
+    _desiredControlSetByCallback = true;
 }
 
 void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data)
@@ -117,8 +163,15 @@ void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::Shared
     // We have to update p_BD_B, because p_WD_W changes over time. This is done in the GpsCallback
     p_BD_B = R_BW * p_BD_W;
 
-    RCLCPP_INFO(this->get_logger(),
-                 "GPS updated, p_WB.x: %f, p_WB.y(): %f, p_WB.z = %f", p_WB_W.x(), p_WB_W.y(), p_WB_W.z());
+    //RCLCPP_INFO(this->get_logger(),
+    //             "GPS updated, p_WB.x: %f, p_WB.y(): %f, p_WB.z = %f", p_WB_W.x(), p_WB_W.y(), p_WB_W.z());
+
+    MatrixXd x0(12, 1);
+    double roll, pitch, yaw;
+    R_WB.getRPY(roll, pitch, yaw);
+    x0 << roll, pitch, yaw, omega_WB.x(), omega_WB.y(), omega_WB.z(), v_WB.x(), v_WB.y(), v_WB.z(), p_WB_W.x(), p_WB_W.y(), p_WB_W.z();
+
+    _mpc.setx0(x0);
 }
 
 void PositionMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data) {
@@ -139,150 +192,39 @@ void PositionMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_dat
     omega_WB = tf2::Vector3(imu_data->angular_velocity.x, imu_data->angular_velocity.y, imu_data->angular_velocity.z);
 
 
-    RCLCPP_INFO(this->get_logger(),
-                 "imu data received! [R_WB_roll: %f, R_WB_pitch: %f, R_WB_yaw: %f]",
-                 roll, pitch, yaw);
+    //RCLCPP_INFO(this->get_logger(),
+    //             "imu data received! [R_WB_roll: %f, R_WB_pitch: %f, R_WB_yaw: %f]",
+    //             roll, pitch, yaw);
+
+    MatrixXd x0(12, 1);
+    x0 << roll, pitch, yaw, omega_WB.x(), omega_WB.y(), omega_WB.z(), v_WB.x(), v_WB.y(),  v_WB.z(), p_WB_W.x(), p_WB_W.y(), p_WB_W.z();
+
+    _mpc.setx0(x0);
 }
 
 void PositionMPC::_sendCommandAttitude()
 {
-    USING_NAMESPACE_ACADO
-    rclcpp::Duration dt = now() - _prev_time;
 
-    // Constants
-    const double Ix = 0.0000166;  // Moment of inertia around p_WB_W_x-axis, source: Julian Förster's ETH Bachelor Thesis
-    const double Iy = 0.0000167;  // Moment of inertia around p_WB_W_y-axis, source: Julian Förster's ETH Bachelor Thesis
-    const double Iz = 0.00000293;  // Moment of inertia around p_WB_W_z-axis, source: Julian Förster's ETH Bachelor Thesis
-    const double m = 0.029;  // Mass of the quadrotor, source: Julian Förster's ETH Bachelor Thesis
-    const double g = 9.81;     // Acceleration due to gravity
-    const double samplingTime = 0.1; // Sampling time for real-time control
-
-    // Initialize ACADO environment
-    DifferentialState R_WB_roll_df, R_WB_pitch_df, R_WB_yaw_df; // Orientation (roll, pitch, yaw)
-    DifferentialState omega_WB_roll_df, omega_WB_pitch_df, omega_WB_yaw_df; // Angular rates
-    DifferentialState v_WB_x_df, v_WB_y_df, v_WB_z_df;         // Velocities
-    DifferentialState p_WB_W_x_df, p_WB_W_y_df, p_WB_W_z_df;   // Position
-
-
-    Control ft_df;                        // Thrust
-    Control tau_x_df, tau_y_df, tau_z_df;       // Torques
-
-    // Define the linearized dynamics of the quadrotor
-    DifferentialEquation f;
-
-
-    // Angular rates dynamics
-    f << dot(R_WB_roll_df) == omega_WB_roll_df;
-    f << dot(R_WB_pitch_df) == omega_WB_pitch_df;
-    f << dot(R_WB_yaw_df) == omega_WB_yaw_df;
-
-    // Angular accelerations dynamics
-    f << dot(omega_WB_roll_df) == tau_x_df / Ix;
-    f << dot(omega_WB_pitch_df) == tau_y_df / Iy;
-    f << dot(omega_WB_yaw_df) == tau_z_df / Iz;
-
-    // Linear accelerations dynamics
-    f << dot(v_WB_x_df) == -g * R_WB_pitch_df;
-    f << dot(v_WB_y_df) == g * R_WB_roll_df;
-    f << dot(v_WB_z_df) == ft_df / m;
-
-    // Linear velocities dynamics
-    f << dot(p_WB_W_x_df) == v_WB_x_df;
-    f << dot(p_WB_W_y_df) == v_WB_y_df;
-    f << dot(p_WB_W_z_df) == v_WB_z_df;
-
-
-
-    Function h;
-    h << p_WB_W_x_df << p_WB_W_y_df << p_WB_W_z_df << R_WB_roll_df << R_WB_pitch_df << R_WB_yaw_df << v_WB_x_df << v_WB_y_df << v_WB_z_df << omega_WB_roll_df << omega_WB_pitch_df << omega_WB_yaw_df;
-    h << ft_df << tau_x_df << tau_y_df << tau_z_df;
-
-
-
-
-
-    //DMatrix Q(dim, dim, matrixData);
-
-    unsigned int dim = static_cast<unsigned int>(h.getDim());
-    std::vector<std::vector<double>> identityData(dim, std::vector<double>(dim, 0.0));
-    for (unsigned int i = 0; i < dim; ++i) {
-        identityData[i][i] = 1.0;
+    if(_desiredControlSetByCallback){
+        // this is the main control loop
+        for (unsigned int index1=0; index1 < _timeSteps - _f -1; index1++)
+        {
+            _mpc.computeControlInputs();
+        }
     }
-    DMatrix Q(dim, dim, identityData);
 
-    // Set up the MPC optimization problem
-    // Prediction horizon of 1 second, with sampling time intervals
-    OCP ocp(0.0, 1.0, 20);
-
-    DVector r(16);
-    r.setZero(); // Set all values to zero initially
-    r(11) = 1.0; // Set the desired z-coordinate to 1.0
-
-
-    ocp.minimizeLSQ(Q, h, r);
-
-    // Subject to the differential equation
-    ocp.subjectTo(f);
-
-    // Add constraints for states and control inputs
-    // Example constraints:
-    //ocp.subjectTo(-10.0 <= p_WB_W_x_df <= 10.0); // p_WB_W_x_df position constraint
-    //ocp.subjectTo(-10.0 <= p_WB_W_y_df <= 10.0); // p_WB_W_y_df position constraint
-    //ocp.subjectTo(-10.0 <= p_WB_W_z_df <= 10.0); // p_WB_W_z_df position constraint
-    // ... Add other constraints as necessary
-
-
-    // Configure the alg for real-time optimization
-    RealTimeAlgorithm alg(ocp, samplingTime);
-    alg.set( MAX_NUM_ITERATIONS, 1 );
-    //alg.set( KKT_TOLERANCE, 1e-3 );
-    //alg.set( QP_SOLVER, QP_QPOASES );
-    //alg.set( HOTSTART_QP, YES );
-
-
-    // Define the current state to be the current values
-    DVector X_MPC(12);
-
-    double R_WB_roll, R_WB_pitch, R_WB_yaw;
-    R_WB.getRPY(R_WB_roll, R_WB_pitch, R_WB_yaw);
-
-    X_MPC(0) = R_WB_roll;
-    X_MPC(1) = R_WB_pitch;
-    X_MPC(2) = R_WB_yaw;
-    X_MPC(3) = omega_WB.x();
-    X_MPC(4) = omega_WB.y();
-    X_MPC(5) = omega_WB.z();
-    X_MPC(6) = v_WB.x();
-    X_MPC(7) = v_WB.y();
-    X_MPC(8) = v_WB.z();
-    X_MPC(9) = p_WB_W.x();
-    X_MPC(10) = p_WB_W.y();
-    X_MPC(11) = p_WB_W.z();
-
-
-    DVector _p; // Initialize parameters if any
-    //VariablesGrid X_MPC_desired_trajectory = (0,0,0,0,0,0,0,0,0,0,0); // Define the reference trajectory
-
-    //alg.init();
-    //if (alg.solve(0, X_MPC) != SUCCESSFUL_RETURN) {
-    //    std::cerr << "Solver failed!" << std::endl;
-        // Handle solver failure
-    //}
-
-    Controller controller( alg, r );
-
-    // Retrieve the control and state solution
-    VariablesGrid state_trajectory, control_trajectory;
-    alg.getDifferentialStates(state_trajectory);
-    alg.getControls(control_trajectory);
 
 
     auto msg = std::make_unique<crazyflie_msgs::msg::AttitudeCommand>();
 
-    double thrust = control_trajectory(0, 0); // Access the optimized thrust value
-    double tau_x = control_trajectory(0, 1); // Access the optimized torque around x-axis
-    double tau_y = control_trajectory(0, 2); // Access the optimized torque around y-axis
-    double tau_z = control_trajectory(0, 3); // Access the optimized torque around z-axis
+    float thrust = static_cast<float>(_mpc.inputs(0,0)); // Access the optimized thrust value
+    float tau_x = static_cast<float>(_mpc.inputs(1,0)); // Access the optimized torque around x-axis
+    float tau_y = static_cast<float>(_mpc.inputs(2,0)); // Access the optimized torque around y-axis
+    float tau_z =  static_cast<float>(_mpc.inputs(3,0)); // Access the optimized torque around z-axis
+
+    RCLCPP_INFO(this->get_logger(),
+                "MPC controls computed! [thrust: %f, tau_x: %f, tau_y: %f, tau_z: %f]",
+                thrust, tau_x, tau_y, tau_z);
 
 
     msg->pitch = tau_y;
@@ -294,6 +236,251 @@ void PositionMPC::_sendCommandAttitude()
 
     _prev_time = now();
 
+}
+
+void PositionMPC::InitializeMPC() {
+    //###############################################################################
+    //#  Define the MPC algorithm parameters
+    //###############################################################################
+
+    // prediction horizon
+    _f = 10;
+    // control horizon
+    _v = 10;
+
+    //###############################################################################
+    //# end of MPC parameter definitions
+    //###############################################################################
+
+
+    //###############################################################################
+    //# Define the model - continuous time
+    //###############################################################################
+
+
+    /* Already defined some constants in the header file
+    const double _Ix = 0.0000166;  // Moment of inertia around p_WB_W_x-axis, source: Julian Förster's ETH Bachelor Thesis
+    const double _Iy = 0.0000167;  // Moment of inertia around p_WB_W_y-axis, source: Julian Förster's ETH Bachelor Thesis
+    const double _Iz = 0.00000293;  // Moment of inertia around p_WB_W_z-axis, source: Julian Förster's ETH Bachelor Thesis
+    const double _mass = 0.029;  // Mass of the quadrotor, source: Julian Förster's ETH Bachelor Thesis
+    const double _g = 9.81;     // Acceleration due to gravity
+    */
+
+    Matrix <double,12,12> Ac {{0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                              {0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
+                              {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
+                              {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                              {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                              {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                              {0, -_g, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                              {_g, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                              {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                              {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
+                              {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
+                              {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0}};
+    Matrix <double,12,4> Bc {{0, 0, 0, 0},
+                             {0, 0, 0, 0},
+                             {0, 0, 0, 0},
+                             {0, 1.0/_Ix, 0, 0},
+                             {0, 0, 1.0/_Iy, 0},
+                             {0, 0, 0, 1.0/_Iz},
+                             {0, 0, 0, 0},
+                             {0, 0, 0, 0},
+                             {1.0/_mass, 0, 0, 0},
+                             {0, 0, 0, 0},
+                             {0, 0, 0, 0},
+                             {0, 0, 0, 0},};
+
+    //Matrix <double,12,12> Cc;
+    //Cc.setIdentity(); // Cc_everything
+
+
+    // Cc_Rot_pos
+    Matrix <double,6,12> Cc {{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                             {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                             {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                             {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
+                             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
+                             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};
+
+
+
+
+    // This is always 12-dimensional!
+    //                         Rotation    angular vel   vel       position
+    //                     roll,pitch,yaw, p, q, r,    u, v, w,     x, y, z
+    Matrix <double,12,1> x0 {{0},{0},{0},{0},{0},{0},{0},{0},{0},{0},{0},{0}};
+
+
+
+    //  m- number of inputs
+    //  r - number of outputs
+    //  n - state dimension
+    unsigned int n = Ac.rows();
+    unsigned int m = Bc.cols();
+    unsigned int r = Cc.rows();
+
+
+    //###############################################################################
+    //# end of model definition
+    //###############################################################################
+
+    //###############################################################################
+    //# discretize the model
+    //###############################################################################
+
+    //# discretization constant
+    double sampling=0.05;
+
+    // # model discretization
+    // identity matrix
+    MatrixXd In;
+    In= MatrixXd::Identity(n,n);
+
+    MatrixXd A;
+    MatrixXd B;
+    MatrixXd C;
+    A.resize(n,n);
+    B.resize(n,m);
+    C.resize(r,n);
+    A=(In-sampling*Ac).inverse();
+    B=A*sampling*Bc;
+    C=Cc;
+
+    //###############################################################################
+    //# end of discretize the model
+    //###############################################################################
+
+    //###############################################################################
+    //# form the weighting matrices
+    //###############################################################################
+
+    //# W1 matrix
+    MatrixXd W1;
+    W1.resize(_v*m,_v*m);
+    W1.setZero();
+
+    MatrixXd Im;
+    Im= MatrixXd::Identity(m,m);
+
+    for (unsigned int i=0; i<_v;i++)
+    {
+        if (i==0)
+        {
+            W1(seq(i*m,(i+1)*m-1),seq(i*m,(i+1)*m-1))=Im;
+        }
+        else
+        {
+            W1(seq(i*m,(i+1)*m-1),seq(i*m,(i+1)*m-1))=Im;
+            W1(seq(i*m,(i+1)*m-1),seq((i-1)*m,(i)*m-1))=-Im;
+        }
+
+    }
+
+
+
+    //# W2 matrix
+    Matrix <double, Bc.cols(), Bc.cols()> Q0;
+    Q0.setIdentity();
+    Q0 = Q0 * 0.0000000011;
+
+    Matrix <double, Bc.cols(), Bc.cols()> Qother;
+    Qother.setIdentity();
+    Qother = Qother * 0.0001;
+
+
+    MatrixXd W2;
+    W2.resize(_v*m,_v*m);
+    W2.setZero();
+
+    for (unsigned int i=0; i<_v; i++)
+    {
+        if (i==0)
+        {
+            // this is for multivariable
+            W2(seq(i*m,(i+1)*m-1),seq(i*m,(i+1)*m-1))=Q0;
+
+            //W2(i*m,i*m)=Q0;
+        }
+        else
+        {
+            // this is for multivariable
+            W2(seq(i*m,(i+1)*m-1),seq(i*m,(i+1)*m-1))=Qother;
+            //W2(i*m,i*m)=Qother;
+
+        }
+
+
+
+    }
+
+    MatrixXd W3;
+    W3=(W1.transpose())*W2*W1;
+
+
+    MatrixXd W4;
+    W4.resize(_f*r,_f*r);
+    W4.setZero();
+
+    // # in the general case, this constant should be a matrix
+    //double predWeight=10;
+
+    Matrix <double, Cc.rows(), Cc.rows()> predWeight;
+    predWeight.setIdentity();
+    predWeight = 10 * predWeight;
+
+    //cout << "predWeight: " << predWeight << endl;
+
+    for (unsigned int i=0; i < _f;i++)
+    {
+        //this is for multivariable
+        W4(seq(i*r,(i+1)*r-1),seq(i*r,(i+1)*r-1))=predWeight;
+        //W4(i*r,i*r)=predWeight;
+    }
+
+
+    //###############################################################################
+    //# end of form the weighting matrices
+    //###############################################################################
+
+    //###############################################################################
+    //# Define the reference trajectory
+    //###############################################################################
+
+    _timeSteps=15;
+
+
+    //                                                Rotation    position
+    //                                            roll,pitch,yaw, x, y, z
+    MatrixXd desiredTrajectory_instance;
+    desiredTrajectory_instance.resize(Cc.rows(),1);
+    desiredTrajectory_instance << 0, 0, 0, 0, 0, 1;
+
+
+    MatrixXd desiredTrajectory;
+    desiredTrajectory.resize(_timeSteps * desiredTrajectory_instance.rows(), 1);
+
+
+    for (unsigned int t = 0; t < _timeSteps; ++t){
+        for (unsigned int r = 0; r < desiredTrajectory_instance.rows(); ++r){
+            desiredTrajectory.row(t * desiredTrajectory_instance.rows() + r) = desiredTrajectory_instance.row(r);
+        }
+
+    }
+
+
+
+    //###############################################################################
+    //# end of definition of the reference trajectory
+    //###############################################################################
+
+    //###############################################################################
+    //# Run the MPC algorithm
+    //###############################################################################
+
+    // create the MPC object
+    _mpc = ModelPredictiveController(A, B, C,
+                                     _f, _v, W3, W4, x0, desiredTrajectory);
 }
 
 int main(int argc, char const *argv[])

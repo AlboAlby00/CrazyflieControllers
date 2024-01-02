@@ -9,16 +9,9 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include <tf2/transform_datatypes.h>
 #include <tf2/LinearMath/Matrix3x3.h>
-//#include <acado_toolkit.hpp>
-//#include <acado_gnuplot.hpp>
-//#include <acado_optimal_control.hpp>
-#include <acado/acado_toolkit.hpp>
-#include <acado/acado_gnuplot.hpp>
-#include <acado/acado_optimal_control.hpp>
-#include <acado/utils/acado_utils.hpp>
-using namespace ACADO;
 
 #include "crazyflie_controllers/control_utils/pid.h"
+#include "crazyflie_controllers/control_utils/ModelPredictiveController.h"
 
 constexpr int CONTROLLER_FREQ = 10;
 
@@ -68,4 +61,19 @@ private:
     rclcpp::Time _prev_time;
     rclcpp::Time _prev_time_position;
     bool _is_prev_time_position_set;
+
+    ModelPredictiveController _mpc;
+
+    unsigned int _f, _v;
+    unsigned int _timeSteps;
+
+    const double _Ix = 0.0000166;  // Moment of inertia around p_WB_W_x-axis, source: Julian Förster's ETH Bachelor Thesis
+    const double _Iy = 0.0000167;  // Moment of inertia around p_WB_W_y-axis, source: Julian Förster's ETH Bachelor Thesis
+    const double _Iz = 0.00000293;  // Moment of inertia around p_WB_W_z-axis, source: Julian Förster's ETH Bachelor Thesis
+    const double _mass = 0.029;  // Mass of the quadrotor, source: Julian Förster's ETH Bachelor Thesis
+    const double _g = 9.81;     // Acceleration due to gravity
+
+    void InitializeMPC();
+
+    bool _desiredControlSetByCallback = false;
 };
