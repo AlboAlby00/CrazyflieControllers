@@ -43,7 +43,7 @@ class ModelPredictiveController{
                      MatrixXd x0Input, MatrixXd desiredControlTrajectoryTotalInput);
         
         // this function is used to propagate the dynamics and to compute the solution of the MPC problem
-        void computeControlInputs();
+        void computeControlInputs(unsigned int timeSteps, unsigned int f);
 
         void setx0(MatrixXd x0Input);
         void setDesiredControlTrajectoryTotal(MatrixXd desiredControlTrajectoryTotalInput);
@@ -61,37 +61,34 @@ class ModelPredictiveController{
         // we store the computed inputs
         MatrixXd inputs;
 
-    private:
+    // this variable is used to track the current time step k of the controller
+    // it is incremented in the function computeControlInputs()
+    unsigned int k;
+
+    // m - input dimension, n- state dimension, r-output dimension
+    unsigned int m,n,r;
+
+    // MatrixXd is an Eigen typdef for Matrix<double, Dynamic, Dynamic>
+    MatrixXd A,B,C,Q; // system matrices
+    MatrixXd W3,W4;   // weighting matrices
+    MatrixXd x0;      // initial state
+    MatrixXd desiredControlTrajectoryTotal; // total desired trajectory
+    unsigned int f,v; // f- prediction horizon, v - control horizon
 
 
-        // this variable is used to track the current time step k of the controller
-        // it is incremented in the function computeControlInputs()
-        unsigned int k;
 
-        // m - input dimension, n- state dimension, r-output dimension 
-        unsigned int m,n,r; 
+    // we store the state vectors of the controlled state trajectory
+    MatrixXd states;
 
-        // MatrixXd is an Eigen typdef for Matrix<double, Dynamic, Dynamic>
-	    MatrixXd A,B,C,Q; // system matrices
-        MatrixXd W3,W4;   // weighting matrices
-	    MatrixXd x0;      // initial state
-        MatrixXd desiredControlTrajectoryTotal; // total desired trajectory
-        unsigned int f,v; // f- prediction horizon, v - control horizon
-        
-                   
-                
-        // we store the state vectors of the controlled state trajectory
-        MatrixXd states;
-        
-        // we store the output vectors of the controlled state trajectory
-        MatrixXd outputs;
+    // we store the output vectors of the controlled state trajectory
+    MatrixXd outputs;
 
-        // lifted system matrices O and M, computed by the constructor 
-        MatrixXd O;
-        MatrixXd M;
+    // lifted system matrices O and M, computed by the constructor
+    MatrixXd O;
+    MatrixXd M;
 
-        // control gain matrix, computed by constructor
-        MatrixXd gainMatrix;
+    // control gain matrix, computed by constructor
+    MatrixXd gainMatrix;
 
 };
 

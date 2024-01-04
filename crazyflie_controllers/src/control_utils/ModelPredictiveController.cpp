@@ -187,39 +187,85 @@ void ModelPredictiveController::setx0(MatrixXd x0Input){
 }
 
 void ModelPredictiveController::setDesiredControlTrajectoryTotal(MatrixXd desiredControlTrajectoryTotalInput){
+    //cout << "In setDesiredControlTrajectoryTotal" <<  endl;
+    //cout << "Argument desiredControlTrajectoryTotalInput(seq(0,5),0): \n" <<
+    desiredControlTrajectoryTotalInput(seq(0,5),0) << endl;
+
+    //cout << "Argument desiredControlTrajectory.rows(): " << desiredControlTrajectoryTotalInput.rows() << endl;
+    //cout << "Argument desiredControlTrajectory.cols(): " << desiredControlTrajectoryTotalInput.cols() << endl;
+    //cout << "Member desiredControlTrajectoryTotal(seq(0,5),0) before the change: \n" <<
+    desiredControlTrajectoryTotal(seq(0,5),0) << endl;
     desiredControlTrajectoryTotal = desiredControlTrajectoryTotalInput;
+    //cout << "Member desiredControlTrajectoryTotal(seq(0,5),0) after the change: \n"
+    //<< desiredControlTrajectoryTotal(seq(0,5),0) << endl;
+
+    //cout << "Member desiredControlTrajectoryTotal.rows() after the change: " << desiredControlTrajectoryTotal.rows() << endl;
+    //cout << "Member desiredControlTrajectoryTotal.cols() after the change: " << desiredControlTrajectoryTotal.cols() << endl;
 }
 
     
 // this function propagates the dynamics
 // and computes the control inputs by solving the model predictive control problem
-void ModelPredictiveController::computeControlInputs()
+void ModelPredictiveController::computeControlInputs(unsigned int timeSteps, unsigned int f)
 {
+    for (unsigned int t=0; t < timeSteps - f - 1; t++) {
+        // # extract the segment of the desired control trajectory
+        MatrixXd desiredControlTrajectory;
 
-    // # extract the segment of the desired control trajectory
-    MatrixXd desiredControlTrajectory;
-    cout << "desiredControlTrajectory: " << desiredControlTrajectory << endl;
+        //cout << "Member desiredControlTrajectoryTotal(seq(0,5),0) in ModelPredictiveController::computeControlInputs(): "
+        //        << desiredControlTrajectoryTotal(seq(0, 5), 0) << endl;
 
-    desiredControlTrajectory=desiredControlTrajectoryTotal(seq(r*k,r*(k+f)-1),all);
+        /*
+        //cout << "r in computeControlInputs(): " << _ << endl;
+        //cout << "r in computeControlInputs(): " << r << endl;
+        cout << "t in computeControlInputs(): " << t << endl;
+        cout << "f in computeControlInputs(): " << f << endl;
+        cout << "r*t in computeControlInputs(): " << r * t << endl;
+        cout << "r*(t+f)-1 in computeControlInputs(): " << r * (t + f) - 1 << endl;
+        cout << "Member desiredControlTrajectoryTotal.rows(): " << desiredControlTrajectoryTotal.rows() << endl;
+        cout << "Member desiredControlTrajectoryTotal.cols(): " << desiredControlTrajectoryTotal.cols() << endl;
+        */
 
-    //# compute the vector s
-    MatrixXd vectorS;
+        /*if (r * t >= desiredControlTrajectoryTotal.rows() || r * (t + f) - 1 > desiredControlTrajectoryTotal.rows()) {
+        cout
+                << "r*t >= desiredControlTrajectoryTotal.rows() || r*(t+f) > desiredControlTrajectoryTotal.rows() in computeControlInputs"
+                << endl;
+        } else {
+         */
+        desiredControlTrajectory = desiredControlTrajectoryTotal(seq(r * t, r * (t + f) - 1), all);
 
-    vectorS=desiredControlTrajectory-O*states.col(k);
+        //# compute the vector s
+        MatrixXd vectorS;
 
-    //# compute the control sequence
-    MatrixXd inputSequenceComputed;
+        vectorS = desiredControlTrajectory - O * states.col(t);
 
-    inputSequenceComputed=gainMatrix*vectorS;
-    // extract the first entry that is applied to the system
-    inputs.col(k)=inputSequenceComputed(seq(0,m-1),all);
+        //# compute the control sequence
+        MatrixXd inputSequenceComputed;
 
-    // propagate the dynamics
-    states.col(k+1)=A*states.col(k)+B*inputs.col(k);
-    outputs.col(k)=C*states.col(k);
+        inputSequenceComputed = gainMatrix * vectorS;
+        // extract the first entry that is applied to the system
+        inputs.col(t) = inputSequenceComputed(seq(0, m - 1), all);
 
-    //increment the index
-    k=k+1;
+        cout << "t in computeControlInputs(): " << t << endl;
+        cout << "inputs.col(t) in computeControlInputs(): " << inputs.col(t) << endl;
+
+        // propagate the dynamics
+        states.col(t + 1) = A * states.col(t) + B * inputs.col(t);
+        outputs.col(t) = C * states.col(t);
+
+            //increment the index
+            /*
+            In outer loop index1 = t
+            for (unsigned int index1=0; index1 < _timeSteps - _f -1; index1++)
+            {
+                _mpc.computeControlInputs();
+            }
+             */
+        //}
+
+    }
+
+
 
 }
 

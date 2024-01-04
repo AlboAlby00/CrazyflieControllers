@@ -9,6 +9,7 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include <tf2/transform_datatypes.h>
 #include <tf2/LinearMath/Matrix3x3.h>
+#include <mutex>
 
 #include "crazyflie_controllers/control_utils/pid.h"
 #include "crazyflie_controllers/control_utils/ModelPredictiveController.h"
@@ -30,10 +31,6 @@ private:
     rclcpp::Publisher<crazyflie_msgs::msg::AttitudeCommand>::SharedPtr _pub_attutude_cmd;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr _sub_imu;
     rclcpp::TimerBase::SharedPtr _attitude_cmd_timer;
-
-    rclcpp::CallbackGroup::SharedPtr _position_command_callback_group;
-    rclcpp::CallbackGroup::SharedPtr _gps_callback_group;
-    rclcpp::CallbackGroup::SharedPtr _imu_callback_group;
 
     tf2::Matrix3x3 R_WB; // Rotation going from world frame W to the body frame B, cannot name it _R_WB
     tf2::Matrix3x3 R_BW; // Rotation going from body frame B to the world frame W
@@ -67,6 +64,8 @@ private:
     bool _is_prev_time_position_set;
 
     ModelPredictiveController _mpc;
+    std::mutex _mpc_mutex;
+
 
     unsigned int _f, _v;
     unsigned int _timeSteps;

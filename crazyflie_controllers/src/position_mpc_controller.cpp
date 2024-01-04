@@ -11,66 +11,41 @@ using namespace std;
 PositionMPC::PositionMPC() :
     Node("position_mpc_controller")
 {
-    _position_command_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-    _gps_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-    _imu_callback_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-
-    rclcpp::SubscriptionOptions position_callback_group_options;
-    position_callback_group_options.callback_group = _position_command_callback_group;
-    rclcpp::SubscriptionOptions gps_callback_group_options;
-    gps_callback_group_options.callback_group = _gps_callback_group;
-    rclcpp::SubscriptionOptions imu_callback_group_options;
-    imu_callback_group_options.callback_group = _imu_callback_group;
-
-    _sub_new_position = this->create_subscription<crazyflie_msgs::msg::PositionCommand>(
-            "/crazyflie/mpc/position_controller", 10,
-            std::bind(&PositionMPC::_newPositionCommandCallback, this, std::placeholders::_1),
-            position_callback_group_options);
-
-    _sub_gps = this->create_subscription<geometry_msgs::msg::PointStamped>(
-            "/crazyflie/gps", 10,
-            std::bind(&PositionMPC::_newGpsCallback, this, std::placeholders::_1),
-            gps_callback_group_options);
-
-    _sub_imu = this->create_subscription<sensor_msgs::msg::Imu>(
-            "/crazyflie/imu", 10,
-            std::bind(&PositionMPC::_newImuCallback, this, std::placeholders::_1),
-            imu_callback_group_options);
-
-
-    _sub_new_position = this->create_subscription<crazyflie_msgs::msg::PositionCommand>(
+        _sub_new_position = this->create_subscription<crazyflie_msgs::msg::PositionCommand>(
             "/crazyflie/mpc/position_controller",
             10,
             std::bind(&PositionMPC::_newPositionCommandCallback, this, std::placeholders::_1));
 
-    _sub_gps = this->create_subscription<geometry_msgs::msg::PointStamped>(
-        "/crazyflie/gps",
-        10,
-        std::bind(&PositionMPC::_newGpsCallback, this, std::placeholders::_1));
+        _sub_gps = this->create_subscription<geometry_msgs::msg::PointStamped>(
+            "/crazyflie/gps",
+            10,
+            std::bind(&PositionMPC::_newGpsCallback, this, std::placeholders::_1));
+        _sub_imu = this->create_subscription<sensor_msgs::msg::Imu>(
+            "/crazyflie/imu",
+            10,
+            std::bind(&PositionMPC::_newImuCallback, this, std::placeholders::_1));
 
-    _sub_imu = this->create_subscription<sensor_msgs::msg::Imu>(
-        "/crazyflie/imu",
-        10,
-        std::bind(&PositionMPC::_newImuCallback, this, std::placeholders::_1));
+        _pub_attutude_cmd = this->create_publisher<crazyflie_msgs::msg::AttitudeCommand>(
+            "/crazyflie/pid/attitude_controller",
+            10);
 
-    _pub_attutude_cmd = this->create_publisher<crazyflie_msgs::msg::AttitudeCommand>(
-        "/crazyflie/pid/attitude_controller",
-        10);
+        _attitude_cmd_timer = this->create_wall_timer(
+                    8.5us,
+            std::bind(&PositionMPC::_sendCommandAttitude, this));
 
-    _attitude_cmd_timer = this->create_wall_timer(
-        std::chrono::milliseconds(1000 / CONTROLLER_FREQ),
-        std::bind(&PositionMPC::_sendCommandAttitude, this));
+        //std::chrono::milliseconds(1000 / CONTROLLER_FREQ)
+        cout << "1000 / CONTROLLER_FREQ: " << 1000 / CONTROLLER_FREQ << endl;
 
-    _prev_time = now();
-    _is_prev_time_position_set = false;
+        _prev_time = now();
+        _is_prev_time_position_set = false;
 
-    v_WB = tf2::Vector3(0.0, 0.0, 0.0);
-    omega_WB = tf2::Vector3(0.0, 0.0, 0.0);
-    p_WB_W = tf2::Vector3(0.0, 0.0, 0.0);
-    R_WB.setIdentity();
-    _desiredControlSetByCallback = false;
+        v_WB = tf2::Vector3(0.0, 0.0, 0.0);
+        omega_WB = tf2::Vector3(0.0, 0.0, 0.0);
+        p_WB_W = tf2::Vector3(0.0, 0.0, 0.0);
+        R_WB.setIdentity();
+        _desiredControlSetByCallback = false;
 
-    InitializeMPC();
+        InitializeMPC();
   
 }
 
@@ -122,7 +97,8 @@ void PositionMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::Positio
     //              assuming that the world Coordinate system is perfectly leveled
     //                                       Rotation,                        Position
     //                            R_WD_roll, R_WD_pitch, R_WD_yaw, p_WD_W_x,   p_WD_W_y,   p_WD_W_z
-    desiredTrajectory_instance << 0,         0,          0,        command->x, command->y, command->z;
+    // desiredTrajectory_instance << 0,         0,          0,        command->x, command->y, command->z; //WRONG!
+    desiredTrajectory_instance << 0,         0,          0,        p_BD_B.x(), p_BD_B.y(), p_BD_B.z();
 
 
     MatrixXd desiredTrajectory;
@@ -136,8 +112,14 @@ void PositionMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::Positio
 
     }
 
-    cout << "desiredControlTrajectory before_mpc.setDesiredControlTrajectoryTotal(desiredTrajectory);:  \n" << desiredTrajectory << endl;
+    cout << "desiredTrajectory before_mpc.setDesiredControlTrajectoryTotal(desiredTrajectory)(seq(0,5),0);:  \n"
+    << desiredTrajectory(seq(0,5),0) << endl;
+    //std::lock_guard<std::mutex> guard(_mpc_mutex);
     _mpc.setDesiredControlTrajectoryTotal(desiredTrajectory);
+
+    cout << "_mpc.desiredControlTrajectoryTotal(seq(0,5),0) after setting it:  \n" <<
+    _mpc.desiredControlTrajectoryTotal(seq(0,5),0) << endl;
+    cout << "_mpc.r:  \n" << _mpc.r << endl;
 
     _desiredControlSetByCallback = true;
 }
@@ -199,6 +181,7 @@ void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::Shared
     R_WB.getRPY(roll, pitch, yaw);
     x0 << roll, pitch, yaw, omega_WB.x(), omega_WB.y(), omega_WB.z(), v_WB.x(), v_WB.y(), v_WB.z(), p_WB_W.x(), p_WB_W.y(), p_WB_W.z();
 
+    //std::lock_guard<std::mutex> guard(_mpc_mutex);
     _mpc.setx0(x0);
 }
 
@@ -227,19 +210,25 @@ void PositionMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_dat
     MatrixXd x0(12, 1);
     x0 << roll, pitch, yaw, omega_WB.x(), omega_WB.y(), omega_WB.z(), v_WB.x(), v_WB.y(),  v_WB.z(), p_WB_W.x(), p_WB_W.y(), p_WB_W.z();
 
+    //std::lock_guard<std::mutex> guard(_mpc_mutex);
     _mpc.setx0(x0);
 }
 
 void PositionMPC::_sendCommandAttitude()
 {
-
-    if(_desiredControlSetByCallback){
+    //std::lock_guard<std::mutex> guard(_mpc_mutex);
+    //if(_desiredControlSetByCallback){
         // this is the main control loop
-        for (unsigned int index1=0; index1 < _timeSteps - _f -1; index1++)
-        {
-            _mpc.computeControlInputs();
-        }
-    }
+
+    cout << "_mpc.desiredControlTrajectoryTotal(seq(0,5),0) in _sendCommandAttitude:  \n"
+    << _mpc.desiredControlTrajectoryTotal(seq(0,5),0) << endl;
+
+
+    _mpc.computeControlInputs(_timeSteps, _f);
+
+
+    _desiredControlSetByCallback = false;
+    //}
 
 
 
@@ -272,9 +261,9 @@ void PositionMPC::InitializeMPC() {
     //###############################################################################
 
     // prediction horizon
-    _f = 10;
+    _f = 5;
     // control horizon
-    _v = 10;
+    _v = 5;
 
     //###############################################################################
     //# end of MPC parameter definitions
@@ -410,7 +399,21 @@ void PositionMPC::InitializeMPC() {
     //# W2 matrix
     Matrix <double, Bc.cols(), Bc.cols()> Q0;
     Q0.setIdentity();
-    Q0 = Q0 * 0.0000000011;
+
+    // Calibrate W2 (i.e. Q0 and Qother) for our drone purpose
+
+    //Q0 = Q0 * 0.00000000011; // *~0.1 -> computer thrust for z=1.0  thrust: 11.464559 (but does not fly! and does fly)
+    Q0 = Q0 * 0.0000000011; //original Q0 -> computer thrust for z=1.0  thrust: 11.464559
+    //Q0 = Q0 * 0.000000004; // *~4 -> computer thrust for z=1.0  thrust: 11.464559
+    //Q0 = Q0 * 0.00000000875; // *~8.75 -> computer thrust for z=1.0  thrust: 11.464558 (but always this value, only accelerates)
+    //Q0 = Q0 * 0.00000000875; // *~8.75 -> computer thrust for z=1.0  thrust: 11.464558 (but always this value, only accelerates)
+    //Q0 = Q0 * 0.000000011; // *10 -> computer thrust for z=0.4 thrust: 4.585823 (doesn't fly)
+    //Q0 = Q0 * 0.000000011; // *10 -> computer thrust for z=1.0  thrust: 11.464558 (but always this value, only accelerates)
+    //Q0 = Q0 * 0.0000000175; // *~17.5 -> computer thrust for z=1.0  thrust: 11.464556
+    //Q0 = Q0 * 0.000000025; // *~25 -> computer thrust for z=1.0  thrust: 11.464555
+    //Q0 = Q0 * 0.00000005; // *~50 -> computer thrust for z=1.0  thrust: 11.464551
+    //Q0 = Q0 * 0.00000011; // *100 -> computer thrust for z=1.0  thrust: 11.464542
+    //Q0 = Q0 * 0.0000011; // *1000 -> computer thrust for z=1.0  thrust: 11.464394
 
     Matrix <double, Bc.cols(), Bc.cols()> Qother;
     Qother.setIdentity();
@@ -475,7 +478,7 @@ void PositionMPC::InitializeMPC() {
     //# Define the reference trajectory
     //###############################################################################
 
-    _timeSteps=15;
+    _timeSteps=10;
 
 
     //                                                Rotation    position
