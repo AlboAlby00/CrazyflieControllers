@@ -189,12 +189,12 @@ void ModelPredictiveController::setx0(MatrixXd x0Input){
 void ModelPredictiveController::setDesiredControlTrajectoryTotal(MatrixXd desiredControlTrajectoryTotalInput){
     //cout << "In setDesiredControlTrajectoryTotal" <<  endl;
     //cout << "Argument desiredControlTrajectoryTotalInput(seq(0,5),0): \n" <<
-    desiredControlTrajectoryTotalInput(seq(0,5),0) << endl;
+    //desiredControlTrajectoryTotalInput(seq(0,5),0) << endl;
 
     //cout << "Argument desiredControlTrajectory.rows(): " << desiredControlTrajectoryTotalInput.rows() << endl;
     //cout << "Argument desiredControlTrajectory.cols(): " << desiredControlTrajectoryTotalInput.cols() << endl;
     //cout << "Member desiredControlTrajectoryTotal(seq(0,5),0) before the change: \n" <<
-    desiredControlTrajectoryTotal(seq(0,5),0) << endl;
+    //desiredControlTrajectoryTotal(seq(0,5),0) << endl;
     desiredControlTrajectoryTotal = desiredControlTrajectoryTotalInput;
     //cout << "Member desiredControlTrajectoryTotal(seq(0,5),0) after the change: \n"
     //<< desiredControlTrajectoryTotal(seq(0,5),0) << endl;
@@ -246,8 +246,8 @@ void ModelPredictiveController::computeControlInputs(unsigned int timeSteps, uns
         // extract the first entry that is applied to the system
         inputs.col(t) = inputSequenceComputed(seq(0, m - 1), all);
 
-        cout << "t in computeControlInputs(): " << t << endl;
-        cout << "inputs.col(t) in computeControlInputs(): " << inputs.col(t) << endl;
+        //cout << "t in computeControlInputs(): " << t << endl;
+        //cout << "inputs.col(t) in computeControlInputs(): " << inputs.col(t) << endl;
 
         // propagate the dynamics
         states.col(t + 1) = A * states.col(t) + B * inputs.col(t);

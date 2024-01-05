@@ -20,6 +20,7 @@ PositionMPC::PositionMPC() :
             "/crazyflie/gps",
             10,
             std::bind(&PositionMPC::_newGpsCallback, this, std::placeholders::_1));
+
         _sub_imu = this->create_subscription<sensor_msgs::msg::Imu>(
             "/crazyflie/imu",
             10,
@@ -30,11 +31,11 @@ PositionMPC::PositionMPC() :
             10);
 
         _attitude_cmd_timer = this->create_wall_timer(
-                    8.5us,
+                std::chrono::milliseconds(1000 / CONTROLLER_FREQ),
             std::bind(&PositionMPC::_sendCommandAttitude, this));
 
         //std::chrono::milliseconds(1000 / CONTROLLER_FREQ)
-        cout << "1000 / CONTROLLER_FREQ: " << 1000 / CONTROLLER_FREQ << endl;
+        // cout << "1000 / CONTROLLER_FREQ: " << 1000 / CONTROLLER_FREQ << endl;
 
         _prev_time = now();
         _is_prev_time_position_set = false;
@@ -79,8 +80,6 @@ void PositionMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::Positio
 
     //Velocity
 
-
-
     _yaw = command->yaw;
     RCLCPP_INFO(this->get_logger(),
                 "target updated, p_BD_B.x(): %f, p_BD_B.y(): %f, p_BD_B.z() = %f",
@@ -112,16 +111,7 @@ void PositionMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::Positio
 
     }
 
-    cout << "desiredTrajectory before_mpc.setDesiredControlTrajectoryTotal(desiredTrajectory)(seq(0,5),0);:  \n"
-    << desiredTrajectory(seq(0,5),0) << endl;
-    //std::lock_guard<std::mutex> guard(_mpc_mutex);
     _mpc.setDesiredControlTrajectoryTotal(desiredTrajectory);
-
-    cout << "_mpc.desiredControlTrajectoryTotal(seq(0,5),0) after setting it:  \n" <<
-    _mpc.desiredControlTrajectoryTotal(seq(0,5),0) << endl;
-    cout << "_mpc.r:  \n" << _mpc.r << endl;
-
-    _desiredControlSetByCallback = true;
 }
 
 void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data)
@@ -183,6 +173,37 @@ void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::Shared
 
     //std::lock_guard<std::mutex> guard(_mpc_mutex);
     _mpc.setx0(x0);
+
+    // Position feedback from world frame should be communicated to the MPC controller in the update of the desired
+    // trajectory
+
+
+    MatrixXd desiredControlTrajectoryTotalInput;
+
+    MatrixXd desiredTrajectory_instance;
+    //                            Cc.rows() = 6 for Rotation (3D) and Position (3D) observation
+    desiredTrajectory_instance.resize(6 ,1);
+    //              assuming that the world Coordinate system is perfectly leveled
+    //                                       Rotation,                        Position
+    //                            R_WD_roll, R_WD_pitch, R_WD_yaw, p_WD_W_x,   p_WD_W_y,   p_WD_W_z
+    // desiredTrajectory_instance << 0,         0,          0,        command->x, command->y, command->z; //WRONG!
+    desiredTrajectory_instance << 0,         0,          0,        p_BD_B.x(), p_BD_B.y(), p_BD_B.z();
+
+
+    MatrixXd desiredTrajectory;
+    desiredTrajectory.resize(_timeSteps * desiredTrajectory_instance.rows(), 1);
+
+
+    for (unsigned int t = 0; t < _timeSteps; ++t){
+        for (unsigned int r = 0; r < desiredTrajectory_instance.rows(); ++r){
+            desiredTrajectory.row(t * desiredTrajectory_instance.rows() + r) = desiredTrajectory_instance.row(r);
+        }
+
+    }
+
+    _mpc.setDesiredControlTrajectoryTotal(desiredTrajectory);
+
+
 }
 
 void PositionMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data) {
@@ -216,19 +237,15 @@ void PositionMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_dat
 
 void PositionMPC::_sendCommandAttitude()
 {
-    //std::lock_guard<std::mutex> guard(_mpc_mutex);
-    //if(_desiredControlSetByCallback){
-        // this is the main control loop
-
-    cout << "_mpc.desiredControlTrajectoryTotal(seq(0,5),0) in _sendCommandAttitude:  \n"
-    << _mpc.desiredControlTrajectoryTotal(seq(0,5),0) << endl;
-
+    auto start = std::chrono::high_resolution_clock::now();
 
     _mpc.computeControlInputs(_timeSteps, _f);
 
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> duration = end - start;
+    std::cout << "Duration of computeControlInputs in _sendCommandAttitude " << duration.count() << " ms" << std::endl;
 
-    _desiredControlSetByCallback = false;
-    //}
+
 
 
 
@@ -403,8 +420,8 @@ void PositionMPC::InitializeMPC() {
     // Calibrate W2 (i.e. Q0 and Qother) for our drone purpose
 
     //Q0 = Q0 * 0.00000000011; // *~0.1 -> computer thrust for z=1.0  thrust: 11.464559 (but does not fly! and does fly)
-    Q0 = Q0 * 0.0000000011; //original Q0 -> computer thrust for z=1.0  thrust: 11.464559
-    //Q0 = Q0 * 0.000000004; // *~4 -> computer thrust for z=1.0  thrust: 11.464559
+    //Q0 = Q0 * 0.0000000011; //original Q0 -> computer thrust for z=1.0  thrust: 11.464559
+    Q0 = Q0 * 0.000000004; // *~4 -> computer thrust for z=1.0  thrust: 11.464559
     //Q0 = Q0 * 0.00000000875; // *~8.75 -> computer thrust for z=1.0  thrust: 11.464558 (but always this value, only accelerates)
     //Q0 = Q0 * 0.00000000875; // *~8.75 -> computer thrust for z=1.0  thrust: 11.464558 (but always this value, only accelerates)
     //Q0 = Q0 * 0.000000011; // *10 -> computer thrust for z=0.4 thrust: 4.585823 (doesn't fly)
