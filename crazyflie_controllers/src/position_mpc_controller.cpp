@@ -47,12 +47,11 @@ PositionMPC::PositionMPC() :
         _desiredControlSetByCallback = false;
 
         InitializeMPC();
-  
 }
 
 void PositionMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::PositionCommand::SharedPtr command)
 {
-
+    auto start = std::chrono::high_resolution_clock::now();
     if(!_is_prev_time_position_set){
         _prev_time_position = now();
         _is_prev_time_position_set = true;
@@ -99,6 +98,8 @@ void PositionMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::Positio
     // desiredTrajectory_instance << 0,         0,          0,        command->x, command->y, command->z; //WRONG!
     desiredTrajectory_instance << 0,         0,          0,        p_BD_B.x(), p_BD_B.y(), p_BD_B.z();
 
+    cout << "p_BD_B.x(): " << p_BD_B.x() << "; p_BD_B.y():" << p_BD_B.y() << "; p_BD_B.z(): " << p_BD_B.z() << endl;
+
 
     MatrixXd desiredTrajectory;
     desiredTrajectory.resize(_timeSteps * desiredTrajectory_instance.rows(), 1);
@@ -112,10 +113,16 @@ void PositionMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::Positio
     }
 
     _mpc.setDesiredControlTrajectoryTotal(desiredTrajectory);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> duration = end - start;
+    std::cout << "Duration of _newPositionCommandCallback: " << duration.count() << " ms" << std::endl;
 }
 
 void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data)
 {
+    auto start = std::chrono::high_resolution_clock::now();
+
     if(!_is_prev_time_position_set){
         _prev_time_position = now();
         _is_prev_time_position_set = true;
@@ -169,8 +176,9 @@ void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::Shared
     MatrixXd x0(12, 1);
     double roll, pitch, yaw;
     R_WB.getRPY(roll, pitch, yaw);
-    x0 << roll, pitch, yaw, omega_WB.x(), omega_WB.y(), omega_WB.z(), v_WB.x(), v_WB.y(), v_WB.z(), p_WB_W.x(), p_WB_W.y(), p_WB_W.z();
+    x0 << roll, pitch, yaw, omega_WB.x(), omega_WB.y(), omega_WB.z(), v_WB.x(), v_WB.y(), v_WB.z(), 0, 0, 0;
 
+    cout << "x0 in _newGpsCallback: \n" << x0 << endl;
     //std::lock_guard<std::mutex> guard(_mpc_mutex);
     _mpc.setx0(x0);
 
@@ -189,6 +197,8 @@ void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::Shared
     // desiredTrajectory_instance << 0,         0,          0,        command->x, command->y, command->z; //WRONG!
     desiredTrajectory_instance << 0,         0,          0,        p_BD_B.x(), p_BD_B.y(), p_BD_B.z();
 
+    cout << "p_BD_B.x(): " << p_BD_B.x() << "; p_BD_B.y()" << p_BD_B.y() << "; p_BD_B.z(): " << p_BD_B.z() << endl;
+
 
     MatrixXd desiredTrajectory;
     desiredTrajectory.resize(_timeSteps * desiredTrajectory_instance.rows(), 1);
@@ -203,10 +213,14 @@ void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::Shared
 
     _mpc.setDesiredControlTrajectoryTotal(desiredTrajectory);
 
-
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> duration = end - start;
+    std::cout << "Duration of _newGpsCallback: " << duration.count() << " ms" << std::endl;
 }
 
 void PositionMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data) {
+    auto start = std::chrono::high_resolution_clock::now();
+
     tf2::Quaternion quaternion(
             imu_data->orientation.x,
             imu_data->orientation.y,
@@ -229,10 +243,16 @@ void PositionMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_dat
     //             roll, pitch, yaw);
 
     MatrixXd x0(12, 1);
-    x0 << roll, pitch, yaw, omega_WB.x(), omega_WB.y(), omega_WB.z(), v_WB.x(), v_WB.y(),  v_WB.z(), p_WB_W.x(), p_WB_W.y(), p_WB_W.z();
+    x0 << roll, pitch, yaw, omega_WB.x(), omega_WB.y(), omega_WB.z(), v_WB.x(), v_WB.y(),  v_WB.z(), 0, 0, 0;
+
+    cout << "x0 in _newImuCallback: \n" << x0 << endl;
 
     //std::lock_guard<std::mutex> guard(_mpc_mutex);
     _mpc.setx0(x0);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> duration = end - start;
+    std::cout << "Duration of _newImuCallback: " << duration.count() << " ms" << std::endl;
 }
 
 void PositionMPC::_sendCommandAttitude()
@@ -241,9 +261,9 @@ void PositionMPC::_sendCommandAttitude()
 
     _mpc.computeControlInputs(_timeSteps, _f);
 
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::milli> duration = end - start;
-    std::cout << "Duration of computeControlInputs in _sendCommandAttitude " << duration.count() << " ms" << std::endl;
+    auto end1 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> duration1 = end1 - start;
+    std::cout << "Duration of computeControlInputs in _sendCommandAttitude " << duration1.count() << " ms" << std::endl;
 
 
 
@@ -270,9 +290,15 @@ void PositionMPC::_sendCommandAttitude()
 
     _prev_time = now();
 
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> duration = end - start;
+    std::cout << "Duration of _sendCommandAttitude " << duration.count() << " ms" << std::endl;
+
 }
 
 void PositionMPC::InitializeMPC() {
+
+    auto start = std::chrono::high_resolution_clock::now();
     //###############################################################################
     //#  Define the MPC algorithm parameters
     //###############################################################################
@@ -529,6 +555,10 @@ void PositionMPC::InitializeMPC() {
     // create the MPC object
     _mpc = ModelPredictiveController(A, B, C,
                                      _f, _v, W3, W4, x0, desiredTrajectory);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> duration = end - start;
+    std::cout << "Duration of InitializeMPC: " << duration.count() << " ms" << std::endl;
 }
 
 int main(int argc, char const *argv[])
