@@ -11,7 +11,7 @@ from launch.substitutions import LaunchConfiguration
 def generate_launch_description():
 
     agent = Node(
-        package='crazyflie_detectors',
+        package='agent',
         executable='agent.py',
         output='screen'
     )

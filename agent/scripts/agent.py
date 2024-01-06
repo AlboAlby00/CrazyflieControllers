@@ -10,34 +10,34 @@ import numpy as np
 from cv_bridge import CvBridge
 
 
-class TestController(Node):
+# class TestController(Node):
     
-    def __init__(self):
-        super().__init__('test_controller')
-        self._cmd_motor_vel_pub = self.create_publisher(MotorVel, 'crazyflie/cmd_motor_vel', 10)
-        self._first_time = True
+#     def __init__(self):
+#         super().__init__('test_controller')
+#         self._cmd_motor_vel_pub = self.create_publisher(MotorVel, 'crazyflie/cmd_motor_vel', 10)
+#         self._first_time = True
 
-        timer_period = 2  
-        self._timer = self.create_timer(timer_period, self.timer_callback)
+#         timer_period = 2  
+#         self._timer = self.create_timer(timer_period, self.timer_callback)
 
-    def timer_callback(self):
-        if self._first_time:
-            propeller_vel = 500.0
-            self.get_logger().info('Publishing cmd_motor_vel for the first time')
-            self._first_time = False
-        else:
-            propeller_vel = 53.0
+#     def timer_callback(self):
+#         if self._first_time:
+#             propeller_vel = 500.0
+#             self.get_logger().info('Publishing cmd_motor_vel for the first time')
+#             self._first_time = False
+#         else:
+#             propeller_vel = 53.0
         
-        msg = MotorVel()
-        msg.m1 =   propeller_vel
-        msg.m2 =   propeller_vel
-        msg.m3 =   propeller_vel
-        msg.m4 =   propeller_vel
-        self._cmd_motor_vel_pub.publish(msg)
+#         msg = MotorVel()
+#         msg.m1 =   propeller_vel
+#         msg.m2 =   propeller_vel
+#         msg.m3 =   propeller_vel
+#         msg.m4 =   propeller_vel
+#         self._cmd_motor_vel_pub.publish(msg)
         
 class ApriltagDetector(Node):
     def __init__(self):
-        super().__init__('crazyflie_detectors')
+        super().__init__('agent')
         self.translation_publisher = self.create_publisher(PointStamped, 'crazyflie/at_translation', 10)
         self.get_logger().info("apriltag detector running")
         self.camera_sub = self.create_subscription(Image, 'crazyflie/camera', self.camera_callback, 10)
