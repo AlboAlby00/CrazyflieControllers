@@ -4,12 +4,75 @@ from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import Image
 from crazyflie_msgs.msg import MotorVel
-import dt_apriltags as apriltag
 import cv2
 import numpy as np
 from cv_bridge import CvBridge
+from deepbots.supervisor.controllers.robot_supervisor_env import RobotSupervisorEnv
+import rospy
 
+from gym.spaces import Box, Discrete
+import numpy as np
 
+class Drone(RobotSupervisorEnv, Node):
+    def __init__(self):
+        super().__init__()
+
+        self.resolution = (128, 128, 3) # TODO correct resolution
+        self.observation_space = Box(low=0, high=255, shape=self.resolution, dtype='uint8')
+        self.action_space = Box(low=0, high=100, shape=(4,), dtype='float32')
+
+        self.motors = []
+        for motor_name in ['m1_motor', 'm2_motor', 'm3_motor', 'm4_motor']:
+            motor = self.getDevice(motor_name)
+            motor.setPosition(float('inf'))
+            motor.setVelocity(0.0) # maybe more to not fall?
+            self.motors.append(motor)
+
+        # TODO: get sensors the same way as motors
+        self.camera = rospy.Subscriber('/crazyflie/camera', Image, self.camera_callback, queue_size=1)
+        self.current_image = None
+
+        self.steps_per_episode = 1000 # TODO: get optimal value
+        self.episode_score = 0
+        self.episode_score_list = []
+    
+    def camera_callback(self, img):
+        image = img.data
+        # convert from ros image to cv2 image
+        image = self.bridge.imgmsg_to_cv2(img, desired_encoding='passthrough')
+        # convert to grayscale
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # resize to (128, 128, 3)
+        image = cv2.resize(image, self.resolution)
+        self.current_image = image
+
+    
+    def get_observations(self):
+        return self.current_image # TODO not sure about implementation
+    
+    def get_default_observation(self):
+        return np.zeros((128, 128, 3)) # DUMMY - TODO
+
+    def get_reward(self, action=None):
+        return 1 # DUMMY - TODO
+    
+    def is_done(self):
+        return True if self.episode_score > 100 else False # DUMMY - TODO
+    
+    def solved(self):
+        return False # DUMMY - TODO
+    
+    def get_info(self):
+        return None
+
+    def render(self, mode='human'):
+        pass
+
+    def apply_action(self, action):
+        for i in range(len(self.motors)):
+            self.wheels[i].setPosition(float('inf'))
+            self.wheels[i].setVelocity(action[i])
+        
 # class TestController(Node):
     
 #     def __init__(self):
@@ -35,74 +98,21 @@ from cv_bridge import CvBridge
 #         msg.m4 =   propeller_vel
 #         self._cmd_motor_vel_pub.publish(msg)
         
-class ApriltagDetector(Node):
+class Agent():
+    def __init__(self) -> None:
+        pass
+
+
+class Trainer():
     def __init__(self):
-        super().__init__('agent')
-        self.translation_publisher = self.create_publisher(PointStamped, 'crazyflie/at_translation', 10)
-        self.get_logger().info("apriltag detector running")
-        self.camera_sub = self.create_subscription(Image, 'crazyflie/camera', self.camera_callback, 10)
-        self.publish_timer = self.create_timer(0.01, self.publish_translation)
+        self.env = Drone()
+        self.agent = None
+        self.solved = False
+        self.episode_count = 0
+        self.episode_limit = 2000
 
-        self.camera_params = (
-            348.62, # fx
-            348.62, # fy
-            162.0, # cx
-            162.0, # cy
-        )
-
-        self.detector = apriltag.Detector(
-            families='tagStandard41h12',
-            nthreads=1,
-            quad_decimate=1.0,
-            quad_sigma=0.0,
-            refine_edges=1,
-            decode_sharpening=0.5,
-            debug=1
-        )
-
-        self.translation = np.zeros(3)
-        self.rotation = np.eye(3)
-
-        self.bridge = CvBridge()
-    
-    
-    def camera_callback(self, image_msg):
-        image = image_msg.data
-        # convert from ros image to cv2 image
-        image = self.bridge.imgmsg_to_cv2(image_msg, desired_encoding='passthrough')
-        # convert to grayscale
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        detections = self.detector.detect(
-            image, 
-            estimate_tag_pose=True, 
-            camera_params=self.camera_params, 
-            tag_size=0.1
-        )
-        if len(detections) > 0:
-            tag_pos = detections[0].pose_t
-            rotation = detections[0].pose_R
-        else:
-            tag_pos = [[0.0], [0.0], [0.0]]
-            rotation = np.eye(3)
-
-        self.translation = np.array([
-            tag_pos[0][0],
-            tag_pos[1][0],
-            tag_pos[2][0]
-        ])
-        self.rotation = rotation
-
-
-    def publish_translation(self):
-        msg = PointStamped()
-        # concat translation and flattened rotation
-        msg.point.x = self.translation[0]
-        msg.point.y = self.translation[1]
-        msg.point.z = self.translation[2]
-        msg.header.stamp = self.get_clock().now().to_msg()
-
-        self.translation_publisher.publish(msg)
-        self.get_logger().info('Publishing Apriltag translation here: "%s' % msg)
+        # TODO the rest https://github.com/aidudezzz/deepbots-tutorials/blob/master/robotSupervisorSchemeTutorial/full_project/controllers/robot_supervisor_controller/robot_supervisor_controller.py
+        
     
 
 def main(args=None):
