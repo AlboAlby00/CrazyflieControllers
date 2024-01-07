@@ -439,7 +439,8 @@ void PositionMPC::InitializeMPC() {
     Matrix <double, Bc.cols(), Bc.cols()> Qother;
     Qother.setIdentity();
     //Qother = Qother * 0.0001; //original
-    Qother = Qother * 0.01;
+    //Qother = Qother * 0.01;
+    Qother = Qother * 0.000000004;
 
 
     MatrixXd W2;
