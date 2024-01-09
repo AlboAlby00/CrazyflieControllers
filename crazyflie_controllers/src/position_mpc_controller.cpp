@@ -31,7 +31,7 @@ PositionMPC::PositionMPC() :
             10);
 
         _attitude_cmd_timer = this->create_wall_timer(
-                std::chrono::milliseconds(1000 / CONTROLLER_FREQ),
+                std::chrono::milliseconds(30),
             std::bind(&PositionMPC::_sendCommandAttitude, this));
 
         //std::chrono::milliseconds(1000 / CONTROLLER_FREQ)
@@ -275,9 +275,9 @@ void PositionMPC::InitializeMPC() {
     //###############################################################################
 
     // prediction horizon
-    _f = 5;
+    _f = 10;
     // control horizon
-    _v = 5;
+    _v = 10;
 
     //###############################################################################
     //# end of MPC parameter definitions
@@ -364,9 +364,9 @@ void PositionMPC::InitializeMPC() {
 
     //double sampling=0.1; // thrust is low as 2
     //double sampling=0.075; // thrust is low as 5
-    //double sampling=0.05; //original
+    double sampling=0.05; //original
     //double sampling=0.035; //
-    double sampling=0.025; //
+    //double sampling=0.025; //
     //double sampling=0.01; // still too much
     //double sampling=0.0001; // too much
 
@@ -424,8 +424,8 @@ void PositionMPC::InitializeMPC() {
     // Calibrate W2 (i.e. Q0 and Qother) for our drone purpose
 
     //Q0 = Q0 * 0.00000000011; // *~0.1 -> computer thrust for z=1.0  thrust: 11.464559 (but does not fly! and does fly)
-    //Q0 = Q0 * 0.0000000011; //original Q0 -> computer thrust for z=1.0  thrust: 11.464559
-    Q0 = Q0 * 0.000000004; // *~4 -> computer thrust for z=1.0  thrust: 11.464559
+    Q0 = Q0 * 0.0000000011; //original Q0 -> computer thrust for z=1.0  thrust: 11.464559
+    //Q0 = Q0 * 0.000000004; // *~4 -> computer thrust for z=1.0  thrust: 11.464559
     //Q0 = Q0 * 0.00000000875; // *~8.75 -> computer thrust for z=1.0  thrust: 11.464558 (but always this value, only accelerates)
     //Q0 = Q0 * 0.00000000875; // *~8.75 -> computer thrust for z=1.0  thrust: 11.464558 (but always this value, only accelerates)
     //Q0 = Q0 * 0.000000011; // *10 -> computer thrust for z=0.4 thrust: 4.585823 (doesn't fly)
@@ -438,9 +438,9 @@ void PositionMPC::InitializeMPC() {
 
     Matrix <double, Bc.cols(), Bc.cols()> Qother;
     Qother.setIdentity();
-    //Qother = Qother * 0.0001; //original
+    Qother = Qother * 0.0001; //original
     //Qother = Qother * 0.01;
-    Qother = Qother * 0.000000004;
+    //Qother = Qother * 0.000000004;
 
 
     MatrixXd W2;
@@ -503,7 +503,7 @@ void PositionMPC::InitializeMPC() {
     //# Define the reference trajectory
     //###############################################################################
 
-    _timeSteps=10;
+    _timeSteps=14;
 
 
     //                                                Rotation    position
