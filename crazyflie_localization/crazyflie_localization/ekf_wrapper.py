@@ -25,20 +25,25 @@ class EkfWrapper(Node):
 
         self.pub_filtered_position = self.create_publisher(PointStamped, 'crazyflie/filtered_position', 10)
         self.pub_imu_with_covariance = self.create_publisher(Imu, 'crazyflie/imu_with_covariance', 10)
+        self.initialized = False
 
     def publish_visual_odometry(self, msg: PointStamped):
+        if msg.point.x != 0 or msg.point.y != 0 or msg.point.z != 0:
+            self.initialized = True
         new_msg = Odometry()
         new_msg.header.frame_id = "base_link"
         new_msg.header.stamp = self.get_clock().now().to_msg()
         new_msg.pose.pose.position.x = msg.point.x
         new_msg.pose.pose.position.y = msg.point.y
         new_msg.pose.pose.position.z = msg.point.z
-        new_msg.pose.covariance = [1e-4,   0.0,      0.0,    0.0,    0.0,    0.0,
-                                   0.0,    1e-4,     0.0,    0.0,    0.0,    0.0,
-                                   0.0,    0.0,      1e-4,   0.0,    0.0,    0.0,
-                                   0.0,    0.0,      0.0,    1e-4,    0.0,    0.0,
-                                   0.0,    0.0,      0.0,    0.0,    1e-4,    0.0,
-                                   0.0,    0.0,      0.0,    0.0,    0.0,    1e-4
+        lost_track = msg.point.x == 0 and msg.point.y == 0 and msg.point.z == 0 and self.initialized
+        cov = 1e-1 if not lost_track else 1.0
+        new_msg.pose.covariance = [cov,   0.0,      0.0,    0.0,    0.0,    0.0,
+                                   0.0,    cov,     0.0,    0.0,    0.0,    0.0,
+                                   0.0,    0.0,      cov,   0.0,    0.0,    0.0,
+                                   0.0,    0.0,      0.0,    cov,    0.0,    0.0,
+                                   0.0,    0.0,      0.0,    0.0,    cov,    0.0,
+                                   0.0,    0.0,      0.0,    0.0,    0.0,    cov
                                    ]
         self.pub_camera_pos.publish(new_msg)
 
@@ -49,23 +54,25 @@ class EkfWrapper(Node):
         new_msg.angular_velocity = msg.angular_velocity
         new_msg.linear_acceleration = msg.linear_acceleration
         new_msg.orientation = msg.orientation
-        # Set covariance values (example values, replace with your own)
-        new_msg.orientation_covariance = [0.01, 0.0, 0.0,
-                                          0.0, 0.01, 0.0,
-                                          0.0, 0.0, 0.01]
-        new_msg.angular_velocity_covariance = [0.01, 0.0, 0.0,
-                                               0.0, 0.01, 0.0,
-                                               0.0, 0.0, 0.01]
-        new_msg.linear_acceleration_covariance = [0.01, 0.0, 0.0,
-                                                  0.0, 0.01, 0.0,
-                                                  0.0, 0.0, 0.01]
+        cov = 1e-7
+        new_msg.orientation_covariance = [cov, 0.0, 0.0,
+                                          0.0, cov, 0.0,
+                                          0.0, 0.0, cov]
+        new_msg.angular_velocity_covariance = [cov, 0.0, 0.0,
+                                               0.0, cov, 0.0,
+                                               0.0, 0.0, cov]
+        new_msg.linear_acceleration_covariance = [cov, 0.0, 0.0,
+                                                  0.0, cov, 0.0,
+                                                  0.0, 0.0, cov]
         self.pub_imu_with_covariance.publish(new_msg)
 
     def publish_filtered_position(self, msg: PointStamped):
-        new_msg = Odometry()
-        new_msg.pose.pose.position.x = msg.pose.pose.position.x
-        new_msg.pose.pose.position.y = msg.pose.pose.position.y
-        new_msg.pose.pose.position.z = msg.pose.pose.position.z
+        new_msg = PointStamped()
+        new_msg.header.frame_id = "base_link"
+        new_msg.header.stamp = self.get_clock().now().to_msg()
+        new_msg.point.x = msg.pose.pose.position.x
+        new_msg.point.y = msg.pose.pose.position.y
+        new_msg.point.z = msg.pose.pose.position.z
         self.pub_filtered_position.publish(new_msg)
 
 

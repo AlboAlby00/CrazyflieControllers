@@ -8,7 +8,15 @@ PositionPID::PositionPID() :
         this->declare_parameter("state_est", "camera");
         std::string state_est_param = this->get_parameter("state_est").as_string();
         RCLCPP_INFO(this->get_logger(), "state: %s", state_est_param.c_str());
-        std::string state_est_topic = state_est_param == "camera" ? "/crazyflie/camera_position" : "/crazyflie/gps";
+        
+        std::string state_est_topic;
+        if (state_est_param == "camera") {
+            state_est_topic = "/crazyflie/camera_position";
+        } else if (state_est_param == "gps") {
+            state_est_topic = "/crazyflie/gps";
+        } else if (state_est_param == "ekf") {
+            state_est_topic = "/crazyflie/filtered_position";
+        }
 
         _sub_new_position = this->create_subscription<crazyflie_msgs::msg::PositionCommand>(
             "/crazyflie/pid/position_controller",

@@ -38,7 +38,7 @@ def generate_launch_description():
         output="screen",
         emulate_tty=True,
         remappings=[
-            ("odometry/filtered", "odometry/filtered/local"),
+            ("odometry/filtered", "crazyflie/filtered_odometry"),
             ("set_pose", "ekf/set_pose"),  # Useful for debugging
         ],
         parameters=[full_ekf_params],

@@ -70,7 +70,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('world', default_value=world_conf),
         DeclareLaunchArgument('use_joy', default_value=use_joy_conf),
-        DeclareLaunchArgument('state_est', default_value=state_est_conf, choices=["camera", "gps"]),
+        DeclareLaunchArgument('state_est', default_value=state_est_conf, choices=["camera", "gps", "ekf"]),
         DeclareLaunchArgument('orb_mode', default_value=orb_mode_conf, choices=["mono", "mono-inertial"]),
         simulation,
         orbslam,
