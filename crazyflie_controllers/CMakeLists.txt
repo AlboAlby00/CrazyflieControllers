@@ -37,6 +37,11 @@ ament_target_dependencies(attitude_pid_controller rclcpp crazyflie_msgs geometry
 add_executable(position_mpc_controller src/position_mpc_controller.cpp src/control_utils/ModelPredictiveController.cpp)
 ament_target_dependencies(position_mpc_controller rclcpp crazyflie_msgs geometry_msgs sensor_msgs)
 
+add_executable(TinyMPC_controller src/TinyMPC_controller.cpp src/tinympc/admm.cpp)
+target_link_libraries(TinyMPC_controller tinympc)
+ament_target_dependencies(TinyMPC_controller rclcpp crazyflie_msgs geometry_msgs sensor_msgs)
+
+
 add_executable(position_pid_controller src/position_pid_controller.cpp src/control_utils/pid.cpp)
 ament_target_dependencies(position_pid_controller rclcpp crazyflie_msgs geometry_msgs sensor_msgs)
 
