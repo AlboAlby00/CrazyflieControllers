@@ -2,7 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
-
+from example_interfaces.srv import SetBool
 from geometry_msgs.msg import Twist
 from crazyflie_msgs.msg import AttitudeCommand
 
@@ -18,7 +18,11 @@ class CmdVelToAttitudeConverter(Node):
         self._roll = 0
         self._yaw = 0
         self._thurst = 1
+        self.req = SetBool.Request()
+        self.cli = self.create_client(SetBool, 'activate_motors')
         self.get_logger().info("cmd_vel_to_attitude node is running!")
+
+        
         
     def _new_cmd_vel_callback(self, cmd_vel : Twist):
 
@@ -39,6 +43,12 @@ class CmdVelToAttitudeConverter(Node):
         self._attitude_command_pub.publish(attitude_command)
 
         return True
+    
+    def send_request(self, data: bool):
+        self.req.data = data
+        self.future = self.cli.call_async(self.req)
+        rclpy.spin_until_future_complete(self, self.future)
+        return self.future.result()
     
     def deg_to_radiants(self, angle):
         return angle * 2 * 3.14 / 360
