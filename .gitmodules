@@ -4,3 +4,6 @@
 [submodule "3rd/ACADOtoolkit"]
 	path = 3rd/ACADOtoolkit
 	url = https://github.com/acado/acado.git
+[submodule "crazyflie_trajectory"]
+	path = crazyflie_trajectory
+	url = git@github.com:danielbinschmid/trajectory_generation.git
