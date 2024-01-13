@@ -1,7 +1,6 @@
 float32[] target_waypoints
 float32[] target_timestamps
 int32 discretization_count
-int32 n_target_waypoints
 ---
 float32[] waypoints 
 int32[] timestamps
