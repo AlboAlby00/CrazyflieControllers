@@ -16,7 +16,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/PidTuner.msg"
   "msg/EulerAngle.msg"
   "msg/TargetTransformationVector.msg"
+  "action/Trajectory.action"
  )
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
