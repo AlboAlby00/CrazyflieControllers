@@ -1,6 +1,6 @@
 #pragma once
 
-#include <tinympc/types.hpp>
+#include "../types.hpp"
 
 tinytype rho_value = 5.0;
 

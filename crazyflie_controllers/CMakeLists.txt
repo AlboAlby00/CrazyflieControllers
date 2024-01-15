@@ -23,8 +23,10 @@ include_directories(
         include
         /usr/local/include
         ../3rd/eigen-3.4.0
+        ../3rd/Eigen
 )
 
+add_subdirectory(src/tinympc)
 
 install(DIRECTORY
   launch

@@ -5,6 +5,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "crazyflie_msgs/msg/position_command.hpp"
 #include "crazyflie_msgs/msg/attitude_command.hpp"
+#include "crazyflie_msgs/msg/motor_vel.hpp"
 #include "geometry_msgs/msg/point_stamped.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include <tf2/transform_datatypes.h>
@@ -15,7 +16,7 @@
 #include "crazyflie_controllers/control_utils/pid.h"
 #include "crazyflie_controllers/control_utils/ModelPredictiveController.h"
 #include "../src/tinympc/admm.hpp"
-#include "crazyflie_controllers/control_utils/problem_data/quadrotor_20hz_params.hpp"
+#include "../../src/tinympc/problem_data/quadrotor_20hz_params.hpp"
 
 
 constexpr int CONTROLLER_FREQ = 10;
@@ -32,7 +33,7 @@ private:
 
     rclcpp::Subscription<crazyflie_msgs::msg::PositionCommand>::SharedPtr _sub_new_position;
     rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr _sub_gps;
-    rclcpp::Publisher<crazyflie_msgs::msg::AttitudeCommand>::SharedPtr _pub_attutude_cmd;
+    rclcpp::Publisher<crazyflie_msgs::msg::MotorVel>::SharedPtr _pub_motor_vel;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr _sub_imu;
     rclcpp::TimerBase::SharedPtr _attitude_cmd_timer;
 
@@ -87,7 +88,7 @@ private:
     TinyCache cache;
     TinyWorkspace work;
     TinySettings settings;
-    TinySolver solver{&settings, &cache, &work};
+    TinySolver solver{};
 
     tiny_VectorNx x0, x1; // current and next simulation states
 };

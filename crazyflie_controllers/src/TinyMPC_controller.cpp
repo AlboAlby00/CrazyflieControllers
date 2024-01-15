@@ -27,8 +27,8 @@ PositionMPC::PositionMPC() :
             10,
             std::bind(&PositionMPC::_newImuCallback, this, std::placeholders::_1));
 
-        _pub_attutude_cmd = this->create_publisher<crazyflie_msgs::msg::AttitudeCommand>(
-            "/crazyflie/pid/attitude_controller",
+        _pub_motor_vel = this->create_publisher<crazyflie_msgs::msg::MotorVel>(
+            "/crazyflie/cmd_motor_vel",
             10);
 
         _attitude_cmd_timer = this->create_wall_timer(
@@ -279,36 +279,31 @@ void PositionMPC::_sendCommandAttitude()
     x1 = work.Adyn * x0 + work.Bdyn * work.u.col(0);
     x0 = x1;
 
-    // std::cout << x0.transpose().format(CleanFmt) << std::endl;
+    auto msg = std::make_unique<crazyflie_msgs::msg::MotorVel>();
+    // RCLCPP_INFO(this->get_logger(), "data received thrust %f", _pitch );
 
-    auto msg = std::make_unique<crazyflie_msgs::msg::AttitudeCommand>();
+    /*
+    auto mapped_thrust = ((_input_thrust - 2.5) / 7.5) / 1.5;
+    msg->m1 = work.u.col(0);
+    msg->m2 = work.u.col(0).;
+    msg->m3 = GRAVITY_COMPENSATION + _input_thrust + pid_roll + pid_pitch + pid_yaw;
+    msg->m4 = GRAVITY_COMPENSATION + _input_thrust + pid_roll - pid_pitch - pid_yaw;
+    */
 
-    float thrust = static_cast<float>(_mpc.inputs(0,0)); // Access the optimized thrust value
-    float tau_x = static_cast<float>(_mpc.inputs(1,0)); // Access the optimized torque around x-axis
-    float tau_y = static_cast<float>(_mpc.inputs(2,0)); // Access the optimized torque around y-axis
-    float tau_z =  static_cast<float>(_mpc.inputs(3,0)); // Access the optimized torque around z-axis
-
-    RCLCPP_INFO(this->get_logger(),
-                "MPC controls computed! [thrust: %f, tau_x: %f, tau_y: %f, tau_z: %f]",
-                thrust, tau_x, tau_y, tau_z);
-
-
-    msg->pitch = tau_y;
-    msg->roll = tau_x;
-    msg->thurst = thrust;
-    msg->yaw = tau_z;
-
-    _pub_attutude_cmd->publish(std::move(msg));
+    _pub_motor_vel->publish(std::move(msg));
 
     _prev_time = now();
 
 }
 
 void PositionMPC::InitializeMPC() {
-    TinyCache cache;
-    TinyWorkspace work;
-    TinySettings settings;
+    //TinyCache cache;
+    //TinyWorkspace work;
+    //TinySettings settings;
+
+
     TinySolver solver{&settings, &cache, &work};
+    solver = solver;
 
     cache.rho = rho_value;
     cache.Kinf = Eigen::Map<Matrix<tinytype, NINPUTS, NSTATES, Eigen::RowMajor>>(Kinf_data);
@@ -363,6 +358,8 @@ void PositionMPC::InitializeMPC() {
     tiny_VectorNx Xref_origin;
     Xref_origin << 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0;
     work.Xref = Xref_origin.replicate<1, NHORIZON>();
+
+
 
     // Initial state
     x0 << 0, 1, 0, 0.2, 0, 0, 0.1, 0, 0, 0, 0, 0;
