@@ -214,8 +214,8 @@ void PositionMPC::_sendCommandAttitude()
     work.Bdyn = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(Bdyn_data);
     work.Q = Eigen::Map<tiny_VectorNx>(Q_data);
     work.R = Eigen::Map<tiny_VectorNu>(R_data);
-    work.u_min = tiny_MatrixNuNhm1::Constant(-0.5);
-    work.u_max = tiny_MatrixNuNhm1::Constant(0.5);
+    work.u_min = tiny_MatrixNuNhm1::Constant(-100);
+    work.u_max = tiny_MatrixNuNhm1::Constant(100);
     work.x_min = tiny_MatrixNxNh::Constant(-5);
     work.x_max = tiny_MatrixNxNh::Constant(5);
 
@@ -247,8 +247,8 @@ void PositionMPC::_sendCommandAttitude()
     settings.abs_dua_tol = 0.001;
     settings.max_iter = 100;
     settings.check_termination = 1;
-    settings.en_input_bound = 50;
-    settings.en_state_bound = 10;
+    settings.en_input_bound = 1;
+    settings.en_state_bound = 1;
 
 
 
@@ -302,8 +302,8 @@ void PositionMPC::_sendCommandAttitude()
     // std::cout << work.u.col(0).transpose().format(CleanFmt) << std::endl;
 
     // 5. Simulate forward
-    x1 = work.Adyn * x0 + work.Bdyn * work.u.col(0);
-    x0 = x1;
+    //x1 = work.Adyn * x0 + work.Bdyn * work.u.col(0);
+    //x0 = x1;
 
     auto msg = std::make_unique<crazyflie_msgs::msg::MotorVel>();
     // RCLCPP_INFO(this->get_logger(), "data received thrust %f", _pitch );
