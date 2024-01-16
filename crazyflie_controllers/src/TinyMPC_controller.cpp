@@ -200,6 +200,9 @@ void PositionMPC::_sendCommandAttitude()
     //TinyWorkspace work;
     //TinySettings settings;
 
+    auto start = std::chrono::high_resolution_clock::now();
+
+
 
     TinySolver solver{&settings, &cache, &work};
 
@@ -312,12 +315,10 @@ void PositionMPC::_sendCommandAttitude()
     //auto mapped_thrust = ((_input_thrust - 2.5) / 7.5) / 1.5;
     auto u = work.u.col(0);
 
-    int MAGIC = 1;
-
-    msg->m1 = GRAVITY_COMPENSATION + MAGIC * u(0);
-    msg->m2 = GRAVITY_COMPENSATION + MAGIC * u(1);
-    msg->m3 = GRAVITY_COMPENSATION + MAGIC * u(2);
-    msg->m4 = GRAVITY_COMPENSATION + MAGIC * u(3);
+    msg->m1 = GRAVITY_COMPENSATION + u(0);
+    msg->m2 = GRAVITY_COMPENSATION + u(1);
+    msg->m3 = GRAVITY_COMPENSATION + u(2);
+    msg->m4 = GRAVITY_COMPENSATION + u(3);
 
     printf("u1: %.4f, u2: %.4f, u3: %.4f, u4: %.4f\n", u(0), u(1), u(2), u(3));
 
@@ -325,7 +326,12 @@ void PositionMPC::_sendCommandAttitude()
 
     _pub_motor_vel->publish(std::move(msg));
 
-    _prev_time = now();
+    auto stop = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
+    // Print out the duration
+    std::cout << "Time taken by function: " << duration.count() << " milliseconds" << std::endl;
 }
 
 void PositionMPC::InitializeMPC() {
