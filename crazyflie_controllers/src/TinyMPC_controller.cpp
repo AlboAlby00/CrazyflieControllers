@@ -31,7 +31,7 @@ PositionMPC::PositionMPC() :
             10);
 
         _attitude_cmd_timer = this->create_wall_timer(
-                std::chrono::milliseconds(30),
+                std::chrono::milliseconds(50),
             std::bind(&PositionMPC::_sendCommandAttitude, this));
 
         //std::chrono::milliseconds(1000 / CONTROLLER_FREQ)
@@ -160,7 +160,7 @@ void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::Shared
     R_WB.getRPY(roll, pitch, yaw);
     x0 << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), 0, 0, 0;
 
-    cout << "v_WB.z() of x0 in _newGpsCallback: \n" << x0(8,0) << endl;
+    //cout << "v_WB.z() of x0 in _newGpsCallback: \n" << x0(8,0) << endl;
 
 
 
@@ -247,8 +247,8 @@ void PositionMPC::_sendCommandAttitude()
     settings.abs_dua_tol = 0.001;
     settings.max_iter = 100;
     settings.check_termination = 1;
-    settings.en_input_bound = 1;
-    settings.en_state_bound = 1;
+    settings.en_input_bound = 50;
+    settings.en_state_bound = 10;
 
 
 
@@ -275,10 +275,10 @@ void PositionMPC::_sendCommandAttitude()
     // phi, theta, psi are NOT Euler angles, they are Rodiguez parameters
     // check this paper for more details: https://ieeexplore.ieee.org/document/9326337
     // Inputs: u1, u2, u3, u4 (motor thrust 0-1, order from Crazyflie)
-    printf("tracking error: %.4f\n", (x0 - work.Xref.col(1)).norm());
+    //printf("tracking error: %.4f\n", (x0 - work.Xref.col(1)).norm());
 
     // 1. Update measurement
-    //work.x.col(0) = x0;
+    work.x.col(0) = x0;
 
     // 2. Update reference (if needed)
 
@@ -287,7 +287,16 @@ void PositionMPC::_sendCommandAttitude()
     // work.g = tiny_MatrixNxNh::Zero();
 
     // 4. Solve MPC problem
-    tiny_solve(&solver);
+    //tiny_solve(&solver);
+
+    int exitflag = tiny_solve(&solver);
+
+    if (exitflag == 0){
+        printf("HOORAY! Solved with no error!\n");
+    } else {
+        printf("OOPS! Something went wrong!\n");
+    }
+
 
     // std::cout << work.iter << std::endl;
     // std::cout << work.u.col(0).transpose().format(CleanFmt) << std::endl;
@@ -301,10 +310,17 @@ void PositionMPC::_sendCommandAttitude()
 
 
     //auto mapped_thrust = ((_input_thrust - 2.5) / 7.5) / 1.5;
-    msg->m1 = GRAVITY_COMPENSATION + work.u.col(0)(0);
-    msg->m2 = GRAVITY_COMPENSATION + work.u.col(0)(1);
-    msg->m3 = GRAVITY_COMPENSATION + work.u.col(0)(2);
-    msg->m4 = GRAVITY_COMPENSATION + work.u.col(0)(3);
+    auto u = work.u.col(0);
+
+    int MAGIC = 1;
+
+    msg->m1 = GRAVITY_COMPENSATION + MAGIC * u(0);
+    msg->m2 = GRAVITY_COMPENSATION + MAGIC * u(1);
+    msg->m3 = GRAVITY_COMPENSATION + MAGIC * u(2);
+    msg->m4 = GRAVITY_COMPENSATION + MAGIC * u(3);
+
+    printf("u1: %.4f, u2: %.4f, u3: %.4f, u4: %.4f\n", u(0), u(1), u(2), u(3));
+
 
 
     _pub_motor_vel->publish(std::move(msg));
