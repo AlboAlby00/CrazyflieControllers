@@ -16,7 +16,8 @@
 #include "crazyflie_controllers/control_utils/pid.h"
 #include "crazyflie_controllers/control_utils/ModelPredictiveController.h"
 #include "../src/tinympc/admm.hpp"
-#include "../../src/tinympc/problem_data/quadrotor_20hz_params.hpp"
+//#include "../../src/tinympc/problem_data/quadrotor_20hz_params.hpp"
+#include "../../src/tinympc/problem_data/quadrotor_100hz_params.hpp"
 #include "../../src/tinympc/types.hpp"
 
 

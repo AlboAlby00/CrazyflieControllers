@@ -31,7 +31,7 @@ PositionMPC::PositionMPC() :
             10);
 
         _attitude_cmd_timer = this->create_wall_timer(
-                std::chrono::milliseconds(50),
+                std::chrono::milliseconds(10),
             std::bind(&PositionMPC::_sendCommandAttitude, this));
 
         //std::chrono::milliseconds(1000 / CONTROLLER_FREQ)
@@ -158,9 +158,11 @@ void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::Shared
 
     double roll, pitch, yaw;
     R_WB.getRPY(roll, pitch, yaw);
-    x0 << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), 0, 0, 0;
+    x0 << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
 
-    //cout << "v_WB.z() of x0 in _newGpsCallback: \n" << x0(8,0) << endl;
+
+    Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+    std::cout << "x0 in _newGpsCallback: " << x0.transpose().format(CleanFmt) << std::endl;
 
 
 
@@ -189,9 +191,10 @@ void PositionMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_dat
     //             roll, pitch, yaw);
 
     rp = qtorp(quaternion);
-    x0 << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), 0, 0, 0;
+    x0 << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
 
-    //cout << "v_WB.z() of x0 in _newImuCallback: \n" << x0(8,0) << endl;
+    Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+    std::cout << "x0 in _newImuCallback: " << x0.transpose().format(CleanFmt) << std::endl;
 }
 
 void PositionMPC::_sendCommandAttitude()
