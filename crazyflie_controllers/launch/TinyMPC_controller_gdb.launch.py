@@ -9,23 +9,12 @@ def generate_launch_description():
 
     tinyMPC_controller = Node(
         package='crazyflie_controllers',
-        executable='tinyMPC_controller',
-        output='screen',
-        prefix='konsole -- gdb -ex run --args'
-    )
-
-    attitude_controller = Node(
-        package='crazyflie_controllers',
-        executable='attitude_pid_controller',
+        executable='TinyMPC_controller',
         output='screen',
         arguments=['--ros-args', '--log-level', 'info']
     )
 
-    cmd_vel_to_attitude = Node(
-        package='crazyflie_teleop',
-        executable='cmd_vel_to_attitude',
-        output='screen'
-    )
+
 
     simulation = IncludeLaunchDescription(launch_description_source=
                                           PythonLaunchDescriptionSource([get_package_share_directory(

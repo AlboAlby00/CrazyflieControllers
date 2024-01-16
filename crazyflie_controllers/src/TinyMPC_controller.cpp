@@ -2,7 +2,6 @@
 #include <iostream>
 #include <Eigen/Dense>
 
-#include "crazyflie_controllers/control_utils/ModelPredictiveController.h"
 #include "tinympc/admm.hpp"
 
 using namespace Eigen;
@@ -50,6 +49,20 @@ PositionMPC::PositionMPC() :
         InitializeMPC();
 }
 
+// Function to convert a 4-dimensional tf2::Quaternion to 3-dimensional Rodriguez parameters
+tiny_VectorNx qtorp(const tf2::Quaternion& quaternion) {
+    tiny_VectorNx rodriguez_params;
+    // Assuming quaternion.w() is the scalar part, and quaternion.x(), quaternion.y(), quaternion.z() are the vector parts
+    if (quaternion.w() != 0) {  // Check to avoid division by zero
+        rodriguez_params[0] = quaternion.x() / quaternion.w();
+        rodriguez_params[1] = quaternion.y() / quaternion.w();
+        rodriguez_params[2] = quaternion.z() / quaternion.w();
+    } else {
+        std::cerr << "Error: The scalar part of the quaternion is zero." << std::endl;
+    }
+    return rodriguez_params;
+}
+
 void PositionMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::PositionCommand::SharedPtr command)
 {
     if(!_is_prev_time_position_set){
@@ -86,33 +99,6 @@ void PositionMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::Positio
 
     double roll, pitch, yaw;
     R_WB.getRPY(roll, pitch, yaw);
-
-    MatrixXd desiredControlTrajectoryTotalInput;
-
-    MatrixXd desiredTrajectory_instance;
-    //                            Cc.rows() = 6 for Rotation (3D) and Position (3D) observation
-    desiredTrajectory_instance.resize(6 ,1);
-    //              assuming that the world Coordinate system is perfectly leveled
-    //                                       Rotation,                        Position
-    //                            R_WD_roll, R_WD_pitch, R_WD_yaw, p_WD_W_x,   p_WD_W_y,   p_WD_W_z
-    // desiredTrajectory_instance << 0,         0,          0,        command->x, command->y, command->z; //WRONG!
-    desiredTrajectory_instance << 0,         0,          0,        p_BD_B.x(), p_BD_B.y(), p_BD_B.z();
-
-    cout << "p_BD_B.z(): " << p_BD_B.z() << endl;
-
-
-    MatrixXd desiredTrajectory;
-    desiredTrajectory.resize(_timeSteps * desiredTrajectory_instance.rows(), 1);
-
-
-    for (unsigned int t = 0; t < _timeSteps; ++t){
-        for (unsigned int r = 0; r < desiredTrajectory_instance.rows(); ++r){
-            desiredTrajectory.row(t * desiredTrajectory_instance.rows() + r) = desiredTrajectory_instance.row(r);
-        }
-
-    }
-
-    _mpc.setDesiredControlTrajectoryTotal(desiredTrajectory);
 
 }
 
@@ -170,49 +156,18 @@ void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::Shared
     //RCLCPP_INFO(this->get_logger(),
     //             "GPS updated, p_WB.x: %f, p_WB.y(): %f, p_WB.z = %f", p_WB_W.x(), p_WB_W.y(), p_WB_W.z());
 
-    MatrixXd x0(12, 1);
     double roll, pitch, yaw;
     R_WB.getRPY(roll, pitch, yaw);
-    x0 << roll, pitch, yaw, omega_WB.x(), omega_WB.y(), omega_WB.z(), v_WB.x(), v_WB.y(), v_WB.z(), 0, 0, 0;
+    x0 << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), 0, 0, 0;
 
     cout << "v_WB.z() of x0 in _newGpsCallback: \n" << x0(8,0) << endl;
-    //std::lock_guard<std::mutex> guard(_mpc_mutex);
-    _mpc.setx0(x0);
-
-    // Position feedback from world frame should be communicated to the MPC controller in the update of the desired
-    // trajectory
 
 
-    MatrixXd desiredControlTrajectoryTotalInput;
 
-    MatrixXd desiredTrajectory_instance;
-    //                            Cc.rows() = 6 for Rotation (3D) and Position (3D) observation
-    desiredTrajectory_instance.resize(6 ,1);
-    //              assuming that the world Coordinate system is perfectly leveled
-    //                                       Rotation,                        Position
-    //                            R_WD_roll, R_WD_pitch, R_WD_yaw, p_WD_W_x,   p_WD_W_y,   p_WD_W_z
-    // desiredTrajectory_instance << 0,         0,          0,        command->x, command->y, command->z; //WRONG!
-    desiredTrajectory_instance << 0,         0,          0,        p_BD_B.x(), p_BD_B.y(), p_BD_B.z();
-
-    cout << "p_BD_B.z() in _newGpsCallback: " << p_BD_B.z() << endl;
-
-
-    MatrixXd desiredTrajectory;
-    desiredTrajectory.resize(_timeSteps * desiredTrajectory_instance.rows(), 1);
-
-
-    for (unsigned int t = 0; t < _timeSteps; ++t){
-        for (unsigned int r = 0; r < desiredTrajectory_instance.rows(); ++r){
-            desiredTrajectory.row(t * desiredTrajectory_instance.rows() + r) = desiredTrajectory_instance.row(r);
-        }
-
-    }
-
-    _mpc.setDesiredControlTrajectoryTotal(desiredTrajectory);
 }
 
 void PositionMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data) {
-    tf2::Quaternion quaternion(
+    quaternion = tf2::Quaternion(
             imu_data->orientation.x,
             imu_data->orientation.y,
             imu_data->orientation.z,
@@ -233,77 +188,20 @@ void PositionMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_dat
     //             "imu data received! [R_WB_roll: %f, R_WB_pitch: %f, R_WB_yaw: %f]",
     //             roll, pitch, yaw);
 
-    MatrixXd x0(12, 1);
-    x0 << roll, pitch, yaw, omega_WB.x(), omega_WB.y(), omega_WB.z(), v_WB.x(), v_WB.y(),  v_WB.z(), 0, 0, 0;
+    rp = qtorp(quaternion);
+    x0 << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), 0, 0, 0;
 
-    cout << "v_WB.z() of x0 in _newImuCallback: \n" << x0(8,0) << endl;
-
-    //std::lock_guard<std::mutex> guard(_mpc_mutex);
-    _mpc.setx0(x0);
-
+    //cout << "v_WB.z() of x0 in _newImuCallback: \n" << x0(8,0) << endl;
 }
 
 void PositionMPC::_sendCommandAttitude()
 {
-    // Quadrotor hovering example
-
-    // This script is just to show how to use the library,
-    // the data for this example is not tuned for our Crazyflie demo. Check the firmware code for more details.
-
-    // Make sure in glob_opts.hpp:
-    // - NSTATES = 12, NINPUTS=4
-    // - NHORIZON = anything you want
-    // - tinytype = float if you want to run on microcontrollers
-    // States: x (m), y, z, phi, theta, psi, dx, dy, dz, dphi, dtheta, dpsi
-    // phi, theta, psi are NOT Euler angles, they are Rodiguez parameters
-    // check this paper for more details: https://ieeexplore.ieee.org/document/9326337
-    // Inputs: u1, u2, u3, u4 (motor thrust 0-1, order from Crazyflie)
-    printf("tracking error: %.4f\n", (x0 - work.Xref.col(1)).norm());
-
-    // 1. Update measurement
-    //work.x.col(0) = x0;
-
-    // 2. Update reference (if needed)
-
-    // 3. Reset dual variables (if needed)
-    // work.y = tiny_MatrixNuNhm1::Zero();
-    // work.g = tiny_MatrixNxNh::Zero();
-
-    // 4. Solve MPC problem
-    tiny_solve(&solver);
-
-    // std::cout << work.iter << std::endl;
-    // std::cout << work.u.col(0).transpose().format(CleanFmt) << std::endl;
-
-    // 5. Simulate forward
-    x1 = work.Adyn * x0 + work.Bdyn * work.u.col(0);
-    x0 = x1;
-
-    auto msg = std::make_unique<crazyflie_msgs::msg::MotorVel>();
-    // RCLCPP_INFO(this->get_logger(), "data received thrust %f", _pitch );
-
-    /*
-    auto mapped_thrust = ((_input_thrust - 2.5) / 7.5) / 1.5;
-    msg->m1 = work.u.col(0);
-    msg->m2 = work.u.col(0).;
-    msg->m3 = GRAVITY_COMPENSATION + _input_thrust + pid_roll + pid_pitch + pid_yaw;
-    msg->m4 = GRAVITY_COMPENSATION + _input_thrust + pid_roll - pid_pitch - pid_yaw;
-    */
-
-    _pub_motor_vel->publish(std::move(msg));
-
-    _prev_time = now();
-
-}
-
-void PositionMPC::InitializeMPC() {
     //TinyCache cache;
     //TinyWorkspace work;
     //TinySettings settings;
 
 
     TinySolver solver{&settings, &cache, &work};
-    solver = solver;
 
     cache.rho = rho_value;
     cache.Kinf = Eigen::Map<Matrix<tinytype, NINPUTS, NSTATES, Eigen::RowMajor>>(Kinf_data);
@@ -356,13 +254,67 @@ void PositionMPC::InitializeMPC() {
 
     // Hovering setpoint
     tiny_VectorNx Xref_origin;
-    Xref_origin << 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    Xref_origin << 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
     work.Xref = Xref_origin.replicate<1, NHORIZON>();
 
 
 
     // Initial state
-    x0 << 0, 1, 0, 0.2, 0, 0, 0.1, 0, 0, 0, 0, 0;
+    //x0 << 0, 1, 0, 0.2, 0, 0, 0.1, 0, 0, 0, 0, 0;
+
+    // Quadrotor hovering example
+
+    // This script is just to show how to use the library,
+    // the data for this example is not tuned for our Crazyflie demo. Check the firmware code for more details.
+
+    // Make sure in glob_opts.hpp:
+    // - NSTATES = 12, NINPUTS=4
+    // - NHORIZON = anything you want
+    // - tinytype = float if you want to run on microcontrollers
+    // States: x (m), y, z, phi, theta, psi, dx, dy, dz, dphi, dtheta, dpsi
+    // phi, theta, psi are NOT Euler angles, they are Rodiguez parameters
+    // check this paper for more details: https://ieeexplore.ieee.org/document/9326337
+    // Inputs: u1, u2, u3, u4 (motor thrust 0-1, order from Crazyflie)
+    printf("tracking error: %.4f\n", (x0 - work.Xref.col(1)).norm());
+
+    // 1. Update measurement
+    //work.x.col(0) = x0;
+
+    // 2. Update reference (if needed)
+
+    // 3. Reset dual variables (if needed)
+    // work.y = tiny_MatrixNuNhm1::Zero();
+    // work.g = tiny_MatrixNxNh::Zero();
+
+    // 4. Solve MPC problem
+    tiny_solve(&solver);
+
+    // std::cout << work.iter << std::endl;
+    // std::cout << work.u.col(0).transpose().format(CleanFmt) << std::endl;
+
+    // 5. Simulate forward
+    x1 = work.Adyn * x0 + work.Bdyn * work.u.col(0);
+    x0 = x1;
+
+    auto msg = std::make_unique<crazyflie_msgs::msg::MotorVel>();
+    // RCLCPP_INFO(this->get_logger(), "data received thrust %f", _pitch );
+
+
+    //auto mapped_thrust = ((_input_thrust - 2.5) / 7.5) / 1.5;
+    msg->m1 = GRAVITY_COMPENSATION + work.u.col(0)(0);
+    msg->m2 = GRAVITY_COMPENSATION + work.u.col(0)(1);
+    msg->m3 = GRAVITY_COMPENSATION + work.u.col(0)(2);
+    msg->m4 = GRAVITY_COMPENSATION + work.u.col(0)(3);
+
+
+    _pub_motor_vel->publish(std::move(msg));
+
+    _prev_time = now();
+}
+
+void PositionMPC::InitializeMPC() {
+
+
 }
 
 int main(int argc, char const *argv[])

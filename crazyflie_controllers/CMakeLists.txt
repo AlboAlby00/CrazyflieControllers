@@ -56,6 +56,7 @@ install(
   attitude_pid_controller
   position_pid_controller
   position_mpc_controller
+  TinyMPC_controller
   DESTINATION lib/${PROJECT_NAME}
 )
 
