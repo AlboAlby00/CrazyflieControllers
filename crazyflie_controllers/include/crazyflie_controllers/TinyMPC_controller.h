@@ -87,4 +87,6 @@ private:
 
     tiny_VectorNx x0;
     tiny_VectorNx x_ref;
+
+    std::mutex _mutex;
 };

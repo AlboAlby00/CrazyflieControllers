@@ -46,6 +46,7 @@ TinyMPC::TinyMPC() :
 }
 
 void TinyMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::PositionCommand::SharedPtr command) {
+    std::lock_guard<std::mutex> guard(_mutex);
     /*
     if(!_is_prev_time_position_set){
         _prev_time_position = now();
@@ -88,6 +89,7 @@ void TinyMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::PositionCom
 }
 
 void TinyMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data) {
+    std::lock_guard<std::mutex> guard(_mutex);
     p_WB_W = tf2::Vector3(gps_data->point.x, gps_data->point.y, gps_data->point.z);
 
     //Rotation & update
@@ -110,6 +112,7 @@ void TinyMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr 
 }
 
 void TinyMPC::_newGpsSpeedCallback(const geometry_msgs::msg::Vector3 gps_speedVec) {
+    std::lock_guard<std::mutex> guard(_mutex);
     v_WB = tf2::Vector3(gps_speedVec.x, gps_speedVec.y, gps_speedVec.z);
 }
 
@@ -127,6 +130,7 @@ Eigen::Vector3d qtorp(const tf2::Quaternion &quaternion) {
 }
 
 void TinyMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data) {
+    std::lock_guard<std::mutex> guard(_mutex);
     quaternion_WB = tf2::Quaternion(
             imu_data->orientation.x,
             imu_data->orientation.y,
@@ -200,6 +204,7 @@ void TinyMPC::initializeMPC() {
 
 void TinyMPC::_sendCommand() {
     auto start = std::chrono::high_resolution_clock::now();
+    std::lock_guard<std::mutex> guard(_mutex);
 
     TinySolver solver{&settings, &cache, &work};
 
@@ -215,14 +220,28 @@ void TinyMPC::_sendCommand() {
     Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
 
 
-    // Hovering setpoint static
+    // Alternative: Hovering setpoint static
     tiny_VectorNx x_ref_origin_static;
-    x_ref_origin_static << 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    //x_ref_origin_static << 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    //x_ref_origin_static << 1.477e-18, 4.548e-18, 0.985,  4.086e-18,  2.676e-18, -7.248e-05,  1.372e-18,  2.708e-19,  1.409e-15,  6.142e-18,  1.443e-16, -3.038e-18;
+    x_ref_origin_static << 3.882e-18, -1.094e-18,  0.985,  2.301e-18,  4.219e-19, -7.248e-05,  4.394e-19, -1.368e-19, 0,  5.575e-17,  7.286e-17, -6.772e-19;
     work.Xref = x_ref_origin_static.replicate<1, NHORIZON>();
 
+    // Hovering setpoint dynamic
+    // Position of x_ref is p_BD_B
+    std::cout << "x_ref in _sendCommand: " << x_ref.transpose().format(CleanFmt) << std::endl;
+    //tiny_VectorNx x_ref_origin_static_copy =  x_ref;
 
-    // Position of  x_ref is p_BD_B
-    //work.Xref = x_ref.replicate<1, NHORIZON>();
+    //work.Xref = x_ref_origin_static_copy.replicate<1, NHORIZON>();
+
+    bool areEqual = x_ref_origin_static.isApprox(x_ref, 1e-2);
+    std::cout << "Are static and dynamic x_ref approximately equal? " << areEqual << std::endl;
+
+    if(!areEqual){
+        cout << "NOT EQUAL!" << endl;
+        auto difference =  x_ref_origin_static - x_ref;
+        std::cout << "difference: " << difference.transpose().format(CleanFmt) << std::endl;
+    }
 
     std::cout << "work.Xref.col(0) in _sendCommand: " << work.Xref.col(0).transpose().format(CleanFmt) << std::endl;
 
@@ -235,7 +254,7 @@ void TinyMPC::_sendCommand() {
 
     //printf("tracking error: %.4f\n", (x0 - work.Xref.col(1)).norm());
     auto error =  work.Xref.col(0) - work.x.col(0);
-    std::cout << "error in _sendCommand: " << error.transpose().format(CleanFmt) << std::endl;
+    std::cout << "Tracking error in _sendCommand: " << error.transpose().format(CleanFmt) << std::endl;
 
 
     int exitflag = tiny_solve(&solver);
