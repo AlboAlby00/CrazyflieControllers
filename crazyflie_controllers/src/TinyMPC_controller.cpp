@@ -227,7 +227,7 @@ void TinyMPC::_sendCommand() {
     std::cout << "work.Xref.col(0) in _sendCommand: " << work.Xref.col(0).transpose().format(CleanFmt) << std::endl;
 
     // Update measurement
-    x0 << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; // position is p_BB_B
+    x0 << 0, 0, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0; // position is p_BB_B
     work.x.col(0) = x0;
 
 
