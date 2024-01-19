@@ -45,6 +45,7 @@ PositionMPC::PositionMPC() :
         p_WB_W = tf2::Vector3(0.0, 0.0, 0.0);
         R_WB.setIdentity();
         _desiredControlSetByCallback = false;
+        p_WD_W = tf2::Vector3(0, 0, 1);
 
         InitializeMPC();
 }
@@ -76,7 +77,7 @@ void PositionMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::Positio
     // Position
 
     // Vector (expressed in body frame B) going from frame B to a desired position D, also p_BD_B
-    p_WD_W = tf2::Vector3(command->x, command->y, command->z);
+    //p_WD_W = tf2::Vector3(command->x, command->y, command->z);
 
     p_BD_W = p_WD_W - p_WB_W;
 
@@ -158,7 +159,8 @@ void PositionMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::Shared
 
     double roll, pitch, yaw;
     R_WB.getRPY(roll, pitch, yaw);
-    x0 << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
+    //x0 << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
+    x0 << p_WB_W.x(), p_WB_W.y(), p_WB_W.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
 
 
     Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
@@ -191,7 +193,8 @@ void PositionMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_dat
     //             roll, pitch, yaw);
 
     rp = qtorp(quaternion);
-    x0 << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
+    //x0 << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
+    x0 << p_WB_W.x(), p_WB_W.y(), p_WB_W.z(), rp.x(), rp.y(), rp.z(), v_WB.x(), v_WB.y(),  v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
 
     Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
     std::cout << "x0 in _newImuCallback: " << x0.transpose().format(CleanFmt) << std::endl;
@@ -260,8 +263,11 @@ void PositionMPC::_sendCommandAttitude()
 
     // Hovering setpoint
     tiny_VectorNx Xref_origin;
-    Xref_origin << 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    Xref_origin << 0, 0, 0.453125, 0, 0, 0, 0, 0, 0, 0, 0, 0; // supposed to be p_WD_W
     work.Xref = Xref_origin.replicate<1, NHORIZON>();
+
+    //Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+    //std::cout << "work.Xref: " << work.Xref.transpose().format(CleanFmt) << std::endl;
 
 
 
@@ -285,6 +291,12 @@ void PositionMPC::_sendCommandAttitude()
 
     // 1. Update measurement
     work.x.col(0) = x0;
+
+    Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+    std::cout << "work.x.col(0) in _sendCommandAttitude: " << work.x.col(0).transpose().format(CleanFmt) << std::endl;
+
+    auto error = work.Xref.col(0) - work.x.col(0);
+    std::cout << "error in _sendCommandAttitude: " << error.transpose().format(CleanFmt) << std::endl;
 
     // 2. Update reference (if needed)
 
