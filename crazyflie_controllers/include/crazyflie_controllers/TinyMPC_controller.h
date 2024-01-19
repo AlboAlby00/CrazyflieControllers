@@ -17,8 +17,8 @@
 #include "crazyflie_controllers/control_utils/pid.h"
 #include "crazyflie_controllers/control_utils/ModelPredictiveController.h"
 #include "../src/tinympc/admm.hpp"
-#include "../../src/tinympc/problem_data/quadrotor_20hz_params.hpp"
-//#include "../../src/tinympc/problem_data/quadrotor_100hz_params.hpp"
+//#include "../../src/tinympc/problem_data/quadrotor_20hz_params.hpp"
+#include "../../src/tinympc/problem_data/quadrotor_100hz_params.hpp"
 #include "../../src/tinympc/types.hpp"
 
 
@@ -40,14 +40,14 @@ private:
 
     void _newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data);
 
-    void _sendCommandAttitude();
+    void _sendCommand();
 
     rclcpp::Subscription<crazyflie_msgs::msg::PositionCommand>::SharedPtr _sub_new_position;
     rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr _sub_gps;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr _sub_gps_speed;
     rclcpp::Publisher<crazyflie_msgs::msg::MotorVel>::SharedPtr _pub_motor_vel;
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr _sub_imu;
-    rclcpp::TimerBase::SharedPtr _attitude_cmd_timer;
+    rclcpp::TimerBase::SharedPtr _cmd_timer;
 
     tf2::Matrix3x3 R_WB; // Rotation going from world frame W to the body frame B, cannot name it _R_WB
     tf2::Matrix3x3 R_BW; // Rotation going from body frame B to the world frame W
@@ -72,9 +72,6 @@ private:
     tf2::Quaternion quaternion_WB;
     Eigen::Vector3d rodriguez_param_WB;
 
-    rclcpp::Time _prev_time;
-    rclcpp::Time _prev_time_position;
-
     void initializeMPC();
 
 
@@ -89,4 +86,5 @@ private:
     TinySettings settings;
 
     tiny_VectorNx x0;
+    tiny_VectorNx x_ref;
 };

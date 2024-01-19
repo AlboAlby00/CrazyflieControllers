@@ -32,11 +32,9 @@ TinyMPC::TinyMPC() :
             "/crazyflie/cmd_motor_vel",
             10);
 
-    _attitude_cmd_timer = this->create_wall_timer(
-            std::chrono::milliseconds(50),
-            std::bind(&TinyMPC::_sendCommandAttitude, this));
-
-    _prev_time = now();
+    _cmd_timer = this->create_wall_timer(
+            std::chrono::milliseconds(10),
+            std::bind(&TinyMPC::_sendCommand, this));
 
     v_WB = tf2::Vector3(0.0, 0.0, 0.0);
     omega_WB = tf2::Vector3(0.0, 0.0, 0.0);
@@ -45,19 +43,6 @@ TinyMPC::TinyMPC() :
     p_WD_W = tf2::Vector3(0, 0, 1);
 
     initializeMPC();
-}
-
-// Function to convert a 4-dimensional tf2::Quaternion to 3-dimensional Rodriguez parameters
-Eigen::Vector3d qtorp(const tf2::Quaternion &quaternion) {
-    Eigen::Vector3d rodriguez_params;
-    if (quaternion.getW() != 0) {  // Check to avoid division by zero
-        rodriguez_params[0] = quaternion.getX() / quaternion.getW();
-        rodriguez_params[1] = quaternion.getY() / quaternion.getW();
-        rodriguez_params[2] = quaternion.getZ() / quaternion.getW();
-    } else {
-        std::cerr << "Error: The scalar part of the quaternion is zero." << std::endl;
-    }
-    return rodriguez_params;
 }
 
 void TinyMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::PositionCommand::SharedPtr command) {
@@ -73,7 +58,9 @@ void TinyMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::PositionCom
     // Position
 
     // Vector (expressed in body frame B) going from frame B to a desired position D, also p_BD_B
-    //p_WD_W = tf2::Vector3(command->x, command->y, command->z);
+    */
+    p_WD_W = tf2::Vector3(command->x, command->y, command->z); // to avoid stderr about unused parameter
+    /*
 
     p_BD_W = p_WD_W - p_WB_W;
 
@@ -111,21 +98,32 @@ void TinyMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr 
 
     // The goal here is to express the Vector p_BD_W (expressed in body frame W) going from frame B to a desired
     // position D in the Vector in the body frame B, i.e. p_BD_B.
-    // Then we use this vector for the position control of the drone for correct PID gains calculation.
+    // Then we use this vector for the TinyMPC control of the drone.
     // We have to update p_BD_B, because p_WD_W changes over time. This is done in the GpsCallback
     p_BD_B = R_BW * p_BD_W;
 
-    double roll, pitch, yaw;
-    R_WB.getRPY(roll, pitch, yaw);
-    x0
-            << p_WB_W.x(), p_WB_W.y(), p_WB_W.z(), rodriguez_param_WB[0], rodriguez_param_WB[1], rodriguez_param_WB[2], v_WB.x(), v_WB.y(), v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
+    x_ref
+            << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rodriguez_param_WB[0], rodriguez_param_WB[1], rodriguez_param_WB[2], v_WB.x(), v_WB.y(), v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
 
-    Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-    std::cout << "x0 in _newGpsCallback: " << x0.transpose().format(CleanFmt) << std::endl;
+    //Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+    //std::cout << "x_ref in _newGpsCallback: " << x_ref.transpose().format(CleanFmt) << std::endl;
 }
 
 void TinyMPC::_newGpsSpeedCallback(const geometry_msgs::msg::Vector3 gps_speedVec) {
     v_WB = tf2::Vector3(gps_speedVec.x, gps_speedVec.y, gps_speedVec.z);
+}
+
+// Function to convert a 4-dimensional tf2::Quaternion to 3-dimensional Rodriguez parameters
+Eigen::Vector3d qtorp(const tf2::Quaternion &quaternion) {
+    Eigen::Vector3d rodriguez_params;
+    if (quaternion.getW() != 0) {  // Check to avoid division by zero
+        rodriguez_params[0] = quaternion.getX() / quaternion.getW();
+        rodriguez_params[1] = quaternion.getY() / quaternion.getW();
+        rodriguez_params[2] = quaternion.getZ() / quaternion.getW();
+    } else {
+        std::cerr << "Error: The scalar part of the quaternion is zero." << std::endl;
+    }
+    return rodriguez_params;
 }
 
 void TinyMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data) {
@@ -139,98 +137,16 @@ void TinyMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data) {
     R_WB = tf2::Matrix3x3(quaternion_WB);
 
 
-    double roll, pitch, yaw;
-    R_WB.getRPY(roll, pitch, yaw);
-
     //Frame B's angular velocity in frame W
     omega_WB = tf2::Vector3(imu_data->angular_velocity.x, imu_data->angular_velocity.y, imu_data->angular_velocity.z);
 
 
-    //RCLCPP_INFO(this->get_logger(),
-    //             "imu data received! [R_WB_roll: %f, R_WB_pitch: %f, R_WB_yaw: %f]",
-    //             roll, pitch, yaw);
-
     rodriguez_param_WB = qtorp(quaternion_WB);
-    x0
-            << p_WB_W.x(), p_WB_W.y(), p_WB_W.z(), rodriguez_param_WB[0], rodriguez_param_WB[1], rodriguez_param_WB[2], v_WB.x(), v_WB.y(), v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
-
-    Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-    std::cout << "x0 in _newImuCallback: " << x0.transpose().format(CleanFmt) << std::endl;
-}
-
-void TinyMPC::_sendCommandAttitude() {
-    auto start = std::chrono::high_resolution_clock::now();
-
-    TinySolver solver{&settings, &cache, &work};
-
-    // Make sure in glob_opts.hpp:
-    // - NSTATES = 12, NINPUTS=4
-    // - NHORIZON = anything you want
-    // - tinytype = float if you want to run on microcontrollers
-    // States: x (m), y, z, phi, theta, psi, dx, dy, dz, dphi, dtheta, dpsi
-    // phi, theta, psi are NOT Euler angles, they are Rodiguez parameters
-    // check this paper for more details: https://ieeexplore.ieee.org/document/9326337
-    // Inputs: u1, u2, u3, u4 (motor thrust 0-1, order from Crazyflie)
-
-    // Hovering setpoint
-    tiny_VectorNx Xref_origin;
-    Xref_origin << 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0; // supposed to be p_WD_W
-    work.Xref = Xref_origin.replicate<1, NHORIZON>();
+    x_ref
+            << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rodriguez_param_WB[0], rodriguez_param_WB[1], rodriguez_param_WB[2], v_WB.x(), v_WB.y(), v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
 
     //Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-    //std::cout << "work.Xref: " << work.Xref.transpose().format(CleanFmt) << std::endl;
-
-    // Update measurement
-    work.x.col(0) = x0;
-
-    Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
-    std::cout << "work.x.col(0): " << work.x.col(0).transpose().format(CleanFmt) << std::endl;
-
-    //printf("tracking error: %.4f\n", (x0 - work.Xref.col(1)).norm());
-    auto error = work.Xref.col(0) - work.x.col(0);
-    std::cout << "error in _sendCommandAttitude: " << error.transpose().format(CleanFmt) << std::endl;
-
-
-    int exitflag = tiny_solve(&solver);
-
-    if (exitflag == 0) {
-        printf("HOORAY! Solved with no error!\n");
-    } else {
-        printf("OOPS! Something went wrong!\n");
-        std::cout << "rodriguez_param_WB: " << rodriguez_param_WB.transpose().format(CleanFmt) << std::endl;
-        std::cout << "Quaternion x: " << quaternion_WB.getX()
-                  << " y: " << quaternion_WB.getY()
-                  << " z: " << quaternion_WB.getZ()
-                  << " w: " << quaternion_WB.getW() << std::endl;
-        //std::cout << "2ndtime: work.x.col(0) in _sendCommandAttitude: " << work.x.col(0).transpose().format(CleanFmt) << std::endl;
-        //std::cout << "2ndtime: error in _sendCommandAttitude: " << error.transpose().format(CleanFmt) << std::endl;
-    }
-
-
-    auto msg = std::make_unique<crazyflie_msgs::msg::MotorVel>();
-
-    auto u = work.u.col(0);
-
-    msg->m1 = GRAVITY_COMPENSATION + u(0);
-    msg->m2 = GRAVITY_COMPENSATION + u(1);
-    msg->m3 = GRAVITY_COMPENSATION + u(2);
-    msg->m4 = GRAVITY_COMPENSATION + u(3);
-
-    printf("u1: %.4f, u2: %.4f, u3: %.4f, u4: %.4f\n", u(0), u(1), u(2), u(3));
-
-    auto u_prev = u;
-
-    if ((u(0) * u_prev(0) < 0.0) || (u(1) * u_prev(1) < 0.0) || (u(2) * u_prev(2) < 0.0) || (u(3) * u_prev(3) < 0.0)) {
-        printf("At least one sign of the the vector u changed!\n");
-    }
-
-    _pub_motor_vel->publish(std::move(msg));
-
-    auto stop = std::chrono::high_resolution_clock::now();
-
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
-
-    std::cout << "Time taken by function: " << duration.count() << " milliseconds" << std::endl;
+    //std::cout << "x_ref in _newImuCallback: " << x_ref.transpose().format(CleanFmt) << std::endl;
 }
 
 void TinyMPC::initializeMPC() {
@@ -278,8 +194,90 @@ void TinyMPC::initializeMPC() {
     settings.abs_dua_tol = 0.001;
     settings.max_iter = 100;
     settings.check_termination = 1;
-    settings.en_input_bound = 10;
-    settings.en_state_bound = 10;
+    settings.en_input_bound = 1;
+    settings.en_state_bound = 1;
+}
+
+void TinyMPC::_sendCommand() {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    TinySolver solver{&settings, &cache, &work};
+
+    // Make sure in glob_opts.hpp:
+    // - NSTATES = 12, NINPUTS=4
+    // - NHORIZON = anything you want
+    // - tinytype = float if you want to run on microcontrollers
+    // States: x (m), y, z, phi, theta, psi, dx, dy, dz, dphi, dtheta, dpsi
+    // phi, theta, psi are NOT Euler angles, they are Rodiguez parameters
+    // check this paper for more details: https://ieeexplore.ieee.org/document/9326337
+    // Inputs: u1, u2, u3, u4 (motor thrust 0-1, order from Crazyflie)
+
+    Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
+
+
+    // Hovering setpoint static
+    tiny_VectorNx x_ref_origin_static;
+    x_ref_origin_static << 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    work.Xref = x_ref_origin_static.replicate<1, NHORIZON>();
+
+
+    // Position of  x_ref is p_BD_B
+    //work.Xref = x_ref.replicate<1, NHORIZON>();
+
+    std::cout << "work.Xref.col(0) in _sendCommand: " << work.Xref.col(0).transpose().format(CleanFmt) << std::endl;
+
+    // Update measurement
+    x0 << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0; // position is p_BB_B
+    work.x.col(0) = x0;
+
+
+    std::cout << "work.x.col(0): " << work.x.col(0).transpose().format(CleanFmt) << std::endl;
+
+    //printf("tracking error: %.4f\n", (x0 - work.Xref.col(1)).norm());
+    auto error =  work.Xref.col(0) - work.x.col(0);
+    std::cout << "error in _sendCommand: " << error.transpose().format(CleanFmt) << std::endl;
+
+
+    int exitflag = tiny_solve(&solver);
+
+    if (exitflag == 0) {
+        printf("HOORAY! Solved with no error!\n");
+    } else {
+        printf("OOPS! Something went wrong!\n");
+        std::cout << "rodriguez_param_WB: " << rodriguez_param_WB.transpose().format(CleanFmt) << std::endl;
+        std::cout << "Quaternion x: " << quaternion_WB.getX()
+                  << " y: " << quaternion_WB.getY()
+                  << " z: " << quaternion_WB.getZ()
+                  << " w: " << quaternion_WB.getW() << std::endl;
+        //std::cout << "2ndtime: work.x.col(0) in _sendCommand: " << work.x.col(0).transpose().format(CleanFmt) << std::endl;
+        //std::cout << "2ndtime: error in _sendCommand: " << error.transpose().format(CleanFmt) << std::endl;
+    }
+
+
+    auto msg = std::make_unique<crazyflie_msgs::msg::MotorVel>();
+
+    auto u = work.u.col(0);
+
+    msg->m1 = GRAVITY_COMPENSATION + u(0);
+    msg->m2 = GRAVITY_COMPENSATION + u(1);
+    msg->m3 = GRAVITY_COMPENSATION + u(2);
+    msg->m4 = GRAVITY_COMPENSATION + u(3);
+
+    printf("u1: %.4f, u2: %.4f, u3: %.4f, u4: %.4f\n", u(0), u(1), u(2), u(3));
+
+    auto u_prev = u;
+
+    if ((u(0) * u_prev(0) < 0.0) || (u(1) * u_prev(1) < 0.0) || (u(2) * u_prev(2) < 0.0) || (u(3) * u_prev(3) < 0.0)) {
+        printf("At least one sign of the the vector u changed!\n");
+    }
+
+    _pub_motor_vel->publish(std::move(msg));
+
+    auto stop = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+
+    std::cout << "Time taken by function: " << duration.count() << " milliseconds" << std::endl;
 }
 
 
