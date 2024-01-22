@@ -57,6 +57,8 @@ private:
     tf2::Vector3 p_WB_W; // Vector (expressed in body frame W) going from the world frame W to the body frame B
 
     // position vector quantities about the desired position vector
+
+    tf2::Vector3 p_BB_B; // Vector (expressed in body frame B) going from frame B to B
     tf2::Vector3 p_BD_B; // Vector (expressed in body frame B) going from frame B to a desired position D
     tf2::Vector3 p_BD_W; // Vector (expressed in body frame W) going from frame B to a desired position D
 

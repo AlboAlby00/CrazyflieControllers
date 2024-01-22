@@ -47,45 +47,9 @@ TinyMPC::TinyMPC() :
 
 void TinyMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::PositionCommand::SharedPtr command) {
     std::lock_guard<std::mutex> guard(_mutex);
-    /*
-    if(!_is_prev_time_position_set){
-        _prev_time_position = now();
-        _is_prev_time_position_set = true;
 
-    }
-
-    // hard-coded desired position now later in the MPC method
-
-    // Position
-
-    // Vector (expressed in body frame B) going from frame B to a desired position D, also p_BD_B
-    */
     p_WD_W = tf2::Vector3(command->x, command->y, command->z); // to avoid stderr about unused parameter
-    /*
 
-    p_BD_W = p_WD_W - p_WB_W;
-
-    //Rotation
-
-    R_BW = R_WB.transpose();
-
-    // The goal here is to express the Vector p_BD_W (expressed in body frame W) going from frame B to a desired
-    // position D in the Vector in the body frame B, i.e. p_BD_B.
-    // Then we use this vector for the position control of the drone for correct PID gains calculation.
-    // We have to update p_BD_B, because p_WD_W changes over time. This is done in the GpsCallback
-    p_BD_B = R_BW * p_BD_W;
-
-    //Velocity
-
-    _yaw = command->yaw;
-    RCLCPP_INFO(this->get_logger(),
-                "target updated, p_BD_B.x(): %f, p_BD_B.y(): %f, p_BD_B.z() = %f",
-                p_BD_B.x(), p_BD_B.y(), p_BD_B.z());
-
-    double roll, pitch, yaw;
-    R_WB.getRPY(roll, pitch, yaw);
-     */
-    // Not used right now
 }
 
 void TinyMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data) {
@@ -104,8 +68,8 @@ void TinyMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr 
     // We have to update p_BD_B, because p_WD_W changes over time. This is done in the GpsCallback
     p_BD_B = R_BW * p_BD_W;
 
-    x_ref
-            << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rodriguez_param_WB[0], rodriguez_param_WB[1], rodriguez_param_WB[2], v_WB.x(), v_WB.y(), v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
+    x0
+            << p_WB_W.x(), p_WB_W.y(), p_WB_W.z(), rodriguez_param_WB[0], rodriguez_param_WB[1], rodriguez_param_WB[2], v_WB.x(), v_WB.y(), v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
 
     //Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
     //std::cout << "x_ref in _newGpsCallback: " << x_ref.transpose().format(CleanFmt) << std::endl;
@@ -146,8 +110,8 @@ void TinyMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data) {
 
 
     rodriguez_param_WB = qtorp(quaternion_WB);
-    x_ref
-            << p_BD_B.x(), p_BD_B.y(), p_BD_B.z(), rodriguez_param_WB[0], rodriguez_param_WB[1], rodriguez_param_WB[2], v_WB.x(), v_WB.y(), v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
+    x0
+            << p_WB_W.x(), p_WB_W.y(), p_WB_W.z(), rodriguez_param_WB[0], rodriguez_param_WB[1], rodriguez_param_WB[2], v_WB.x(), v_WB.y(), v_WB.z(), omega_WB.x(), omega_WB.y(), omega_WB.z();
 
     //Eigen::IOFormat CleanFmt(4, 0, ", ", "\n", "[", "]");
     //std::cout << "x_ref in _newImuCallback: " << x_ref.transpose().format(CleanFmt) << std::endl;
@@ -222,42 +186,56 @@ void TinyMPC::_sendCommand() {
 
     // Alternative: Hovering setpoint static
     tiny_VectorNx x_ref_origin_static;
-    //x_ref_origin_static << 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    //x_ref_origin_static << 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0;
     //x_ref_origin_static << 1.477e-18, 4.548e-18, 0.985,  4.086e-18,  2.676e-18, -7.248e-05,  1.372e-18,  2.708e-19,  1.409e-15,  6.142e-18,  1.443e-16, -3.038e-18;
-    x_ref_origin_static << 3.882e-18, -1.094e-18,  0.985,  2.301e-18,  4.219e-19, -7.248e-05,  4.394e-19, -1.368e-19, 0,  5.575e-17,  7.286e-17, -6.772e-19;
-    work.Xref = x_ref_origin_static.replicate<1, NHORIZON>();
+    //x_ref_origin_static << 3.882e-18, -1.094e-18,  0.985,  2.301e-18,  4.219e-19, -7.248e-05,  4.394e-19, -1.368e-19, 0,  5.575e-17,  7.286e-17, -6.772e-19;
+    //x_ref_origin_static << p_WD_W.x(), p_WD_W.y(), p_WD_W.z(), 0, 0, 0, 0, 0, 0, 0, 0, 0;
+
+    //work.Xref = x_ref_origin_static.replicate<1, NHORIZON>();
 
     // Hovering setpoint dynamic
-    // Position of x_ref is p_BD_B
-    std::cout << "x_ref in _sendCommand: " << x_ref.transpose().format(CleanFmt) << std::endl;
+    // Position of x_ref is p_WD_W
+    x_ref_origin_static << p_WD_W.x(), p_WD_W.y(), p_WD_W.z(), 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    std::cout << "x_ref before the solver: " << x_ref.transpose().format(CleanFmt) << std::endl;
     //tiny_VectorNx x_ref_origin_static_copy =  x_ref;
 
-    //work.Xref = x_ref_origin_static_copy.replicate<1, NHORIZON>();
+    work.Xref = x_ref_origin_static.replicate<1, NHORIZON>();
 
-    bool areEqual = x_ref_origin_static.isApprox(x_ref, 1e-2);
-    std::cout << "Are static and dynamic x_ref approximately equal? " << areEqual << std::endl;
+    /*
+    //bool areEqual = x_ref_origin_static.isApprox(x_ref, 1e-2);
+    //std::cout << "Are static and dynamic x_ref approximately equal? " << areEqual << std::endl;
+
 
     if(!areEqual){
-        cout << "NOT EQUAL!" << endl;
-        auto difference =  x_ref_origin_static - x_ref;
-        std::cout << "difference: " << difference.transpose().format(CleanFmt) << std::endl;
+       cout << "NOT EQUAL!" << endl;
+       auto difference =  x_ref_origin_static - x_ref;
+       std::cout << "difference: " << difference.transpose().format(CleanFmt) << std::endl;
     }
+    */
 
     std::cout << "work.Xref.col(0) in _sendCommand: " << work.Xref.col(0).transpose().format(CleanFmt) << std::endl;
 
     // Update measurement
-    x0 << 0, 0, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0; // position is p_BB_B
-    work.x.col(0) = x0;
+    //x0 << 0, 0, 0.01, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    work.x.col(0) = x0; // position is p_BD_B (MIT Tedrake notation)
 
 
     std::cout << "work.x.col(0): " << work.x.col(0).transpose().format(CleanFmt) << std::endl;
 
     //printf("tracking error: %.4f\n", (x0 - work.Xref.col(1)).norm());
-    auto error =  work.Xref.col(0) - work.x.col(0);
+    auto error = work.Xref.col(0) - work.x.col(0);
     std::cout << "Tracking error in _sendCommand: " << error.transpose().format(CleanFmt) << std::endl;
 
+    auto x_ref_before = x_ref;
 
     int exitflag = tiny_solve(&solver);
+
+    std::cout << "x_ref after the solver: " << x_ref.transpose().format(CleanFmt) << std::endl;
+    if(!x_ref.isApprox(x_ref_before)){
+        cout << "x_ref NOT EQUAL x_ref_before!" << endl;
+        auto difference =  x_ref_before - x_ref;
+        std::cout << "difference: " << difference.transpose().format(CleanFmt) << std::endl;
+    }
 
     if (exitflag == 0) {
         printf("HOORAY! Solved with no error!\n");
