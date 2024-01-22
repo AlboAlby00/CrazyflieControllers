@@ -40,7 +40,7 @@ TinyMPC::TinyMPC() :
     omega_WB = tf2::Vector3(0.0, 0.0, 0.0);
     p_WB_W = tf2::Vector3(0.0, 0.0, 0.0);
     R_WB.setIdentity();
-    p_WD_W = tf2::Vector3(0.25, 0, 0);
+    p_WD_W = tf2::Vector3(0, 0, 1);
 
     initializeMPC();
 }
@@ -196,7 +196,7 @@ void TinyMPC::_sendCommand() {
     // Hovering setpoint dynamic
     // Position of x_ref is p_WD_W
     x_ref_origin_static << p_WD_W.x(), p_WD_W.y(), p_WD_W.z(), 0, 0, 0, 0, 0, 0, 0, 0, 0;
-    //std::cout << "x_ref before the solver: " << x_ref.transpose().format(CleanFmt) << std::endl;
+    std::cout << "x_ref_origin_static before the solver: " << x_ref_origin_static.transpose().format(CleanFmt) << std::endl;
     //tiny_VectorNx x_ref_origin_static_copy =  x_ref;
 
     work.Xref = x_ref_origin_static.replicate<1, NHORIZON>();
@@ -226,14 +226,14 @@ void TinyMPC::_sendCommand() {
     auto error = work.Xref.col(0) - work.x.col(0);
     std::cout << "Tracking error in _sendCommand: " << error.transpose().format(CleanFmt) << std::endl;
 
-    auto x_ref_before = x_ref;
+    auto x_ref_before = x_ref_origin_static;
 
     int exitflag = tiny_solve(&solver);
 
-    std::cout << "x_ref after the solver: " << x_ref.transpose().format(CleanFmt) << std::endl;
-    if(!x_ref.isApprox(x_ref_before)){
+    std::cout << "x_ref after the solver: " << x_ref_origin_static.transpose().format(CleanFmt) << std::endl;
+    if(!x_ref_origin_static.isApprox(x_ref_before)){
         cout << "x_ref NOT EQUAL x_ref_before!" << endl;
-        auto difference =  x_ref_before - x_ref;
+        auto difference =  x_ref_before - x_ref_origin_static;
         std::cout << "difference: " << difference.transpose().format(CleanFmt) << std::endl;
     }
 
