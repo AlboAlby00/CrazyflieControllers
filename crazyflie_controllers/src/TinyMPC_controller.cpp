@@ -129,8 +129,8 @@ void TinyMPC::initializeMPC() {
     work.Bdyn = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(Bdyn_data);
     work.Q = Eigen::Map<tiny_VectorNx>(Q_data);
     work.R = Eigen::Map<tiny_VectorNu>(R_data);
-    work.u_min = tiny_MatrixNuNhm1::Constant(-10);
-    work.u_max = tiny_MatrixNuNhm1::Constant(10);
+    work.u_min = tiny_MatrixNuNhm1::Constant(-1.15);
+    work.u_max = tiny_MatrixNuNhm1::Constant(1.15);
     work.x_min = tiny_MatrixNxNh::Constant(-5);
     work.x_max = tiny_MatrixNxNh::Constant(5);
 
