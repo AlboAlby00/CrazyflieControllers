@@ -129,8 +129,8 @@ void TinyMPC::initializeMPC() {
     work.Bdyn = Eigen::Map<Matrix<tinytype, NSTATES, NINPUTS, Eigen::RowMajor>>(Bdyn_data);
     work.Q = Eigen::Map<tiny_VectorNx>(Q_data);
     work.R = Eigen::Map<tiny_VectorNu>(R_data);
-    work.u_min = tiny_MatrixNuNhm1::Constant(-1.15);
-    work.u_max = tiny_MatrixNuNhm1::Constant(1.15);
+    work.u_min = tiny_MatrixNuNhm1::Constant(-2);
+    work.u_max = tiny_MatrixNuNhm1::Constant(2);
     work.x_min = tiny_MatrixNxNh::Constant(-5);
     work.x_max = tiny_MatrixNxNh::Constant(5);
 
@@ -195,7 +195,11 @@ void TinyMPC::_sendCommand() {
 
     // Hovering setpoint dynamic
     // Position of x_ref is p_WD_W
-    x_ref_origin_static << p_WD_W.x(), p_WD_W.y(), p_WD_W.z(), 0, 0, 0, 0, 0, 0, 0, 0, 0;
+    x_ref_origin_static << p_WD_W.x(), p_WD_W.y(), p_WD_W.z(), 0, 0, 1, 0, 0, 0, 0, 0, 0;
+
+    // Change Yaw-Direction of the drone reference -> still problematic
+    //x_ref_origin_static << p_WD_W.x(), p_WD_W.y(), p_WD_W.z(), 0, 0, 1, 0, 0, 0, 0, 0, 0;
+
     std::cout << "x_ref_origin_static before the solver: " << x_ref_origin_static.transpose().format(CleanFmt) << std::endl;
     //tiny_VectorNx x_ref_origin_static_copy =  x_ref;
 
