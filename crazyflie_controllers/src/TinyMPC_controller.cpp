@@ -40,20 +40,20 @@ TinyMPC::TinyMPC() :
     omega_WB = tf2::Vector3(0.0, 0.0, 0.0);
     p_WB_W = tf2::Vector3(0.0, 0.0, 0.0);
     R_WB.setIdentity();
-    p_WD_W = tf2::Vector3(0, 0, 1);
+    p_WD_W = tf2::Vector3(0, 0, 0.5);
 
     initializeMPC();
 }
 
 void TinyMPC::_newPositionCommandCallback(const crazyflie_msgs::msg::PositionCommand::SharedPtr command) {
-    std::lock_guard<std::mutex> guard(_mutex);
+    //std::lock_guard<std::mutex> guard(_mutex);
 
     p_WD_W = tf2::Vector3(command->x, command->y, command->z); // to avoid stderr about unused parameter
 
 }
 
 void TinyMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr gps_data) {
-    std::lock_guard<std::mutex> guard(_mutex);
+    //std::lock_guard<std::mutex> guard(_mutex);
     p_WB_W = tf2::Vector3(gps_data->point.x, gps_data->point.y, gps_data->point.z);
 
     //Rotation & update
@@ -76,7 +76,7 @@ void TinyMPC::_newGpsCallback(const geometry_msgs::msg::PointStamped::SharedPtr 
 }
 
 void TinyMPC::_newGpsSpeedCallback(const geometry_msgs::msg::Vector3 gps_speedVec) {
-    std::lock_guard<std::mutex> guard(_mutex);
+    //std::lock_guard<std::mutex> guard(_mutex);
     v_WB = tf2::Vector3(gps_speedVec.x, gps_speedVec.y, gps_speedVec.z);
 }
 
@@ -94,7 +94,7 @@ Eigen::Vector3d qtorp(const tf2::Quaternion &quaternion) {
 }
 
 void TinyMPC::_newImuCallback(const sensor_msgs::msg::Imu::SharedPtr imu_data) {
-    std::lock_guard<std::mutex> guard(_mutex);
+    //std::lock_guard<std::mutex> guard(_mutex);
     quaternion_WB = tf2::Quaternion(
             imu_data->orientation.x,
             imu_data->orientation.y,
@@ -168,7 +168,7 @@ void TinyMPC::initializeMPC() {
 
 void TinyMPC::_sendCommand() {
     auto start = std::chrono::high_resolution_clock::now();
-    std::lock_guard<std::mutex> guard(_mutex);
+    //std::lock_guard<std::mutex> guard(_mutex);
 
     TinySolver solver{&settings, &cache, &work};
 
@@ -230,7 +230,7 @@ void TinyMPC::_sendCommand() {
 
     int exitflag = tiny_solve(&solver);
 
-    std::cout << "x_ref after the solver: " << x_ref_origin_static.transpose().format(CleanFmt) << std::endl;
+    std::cout << "x_ref_origin_static after the solver: " << x_ref_origin_static.transpose().format(CleanFmt) << std::endl;
     if(!x_ref_origin_static.isApprox(x_ref_before)){
         cout << "x_ref NOT EQUAL x_ref_before!" << endl;
         auto difference =  x_ref_before - x_ref_origin_static;
